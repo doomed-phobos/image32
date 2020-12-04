@@ -1,4 +1,4 @@
-#include "io.h"
+#include "image.h"
 
 #include <stdexcept>
 #include <windows.h>
@@ -8,13 +8,16 @@ constexpr const char g_lpClassName[] = "Window";
 
 LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
-int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nShowCmd)
+//int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nShowCmd)
+int main()
 {
+   HINSTANCE hInstance = GetModuleHandle(nullptr);
    WNDCLASSEX wcex = {0};
    wcex.cbSize = sizeof(WNDCLASSEX);
    wcex.hInstance = hInstance;
    wcex.lpszClassName = g_lpClassName;
    wcex.lpfnWndProc = WndProc;
+   wcex.style = CS_HREDRAW | CS_VREDRAW;
    if(!RegisterClassEx(&wcex)) throw std::runtime_error("Error al registar una clase!");
    
    g_window = CreateWindowEx(
@@ -52,7 +55,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 // Add a reader image
    switch(msg) {
    case WM_CREATE: {
-      IO
    }
    break;
    case WM_PAINT: {
@@ -67,9 +69,17 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
       bi.bmiHeader.biBitCount = 32;
       bi.bmiHeader.biCompression = BI_RGB;
 
+      static image_t image = {0};
+      static bool init = false;
+
+      if(!init) {
+         init = true;
+         image = image_from_filename("C:\\Users\\Usuario\\Desktop\\example.jpg");
+      }
+
       StretchDIBits(hDC,
-      0, 0, 300, 100,
-      0, 0, 3, 1, reinterpret_cast<void*>(pixels), &bi, DIB_RGB_COLORS, SRCCOPY);
+      0, 0, image.width, image.height,
+      0, 0, image.width, image.height, reinterpret_cast<void*>(image.pixels), &bi, DIB_RGB_COLORS, SRCCOPY);
 
       EndPaint(hWnd, &ps);
    }
