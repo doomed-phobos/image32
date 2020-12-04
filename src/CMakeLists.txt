@@ -1,0 +1,1 @@
+add_executable(image32 WIN32 main.cpp)
