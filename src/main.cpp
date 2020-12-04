@@ -1,3 +1,5 @@
+#include "io.h"
+
 #include <stdexcept>
 #include <windows.h>
 
@@ -45,10 +47,14 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
    // B G R
    static uint8_t pixels[] = {
-      0, 0, 255
+      0, 0, 255, 255, 0, 255, 0, 255, 255, 0, 0, 255
    };
-
+// Add a reader image
    switch(msg) {
+   case WM_CREATE: {
+      IO
+   }
+   break;
    case WM_PAINT: {
       PAINTSTRUCT ps;
       HDC hDC = BeginPaint(hWnd, &ps);
@@ -56,14 +62,14 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
       BITMAPINFO bi = {0};
       bi.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
       bi.bmiHeader.biPlanes = 1;
-      bi.bmiHeader.biWidth = 1;
+      bi.bmiHeader.biWidth = 3;
       bi.bmiHeader.biHeight = -1;
       bi.bmiHeader.biBitCount = 32;
       bi.bmiHeader.biCompression = BI_RGB;
 
       StretchDIBits(hDC,
-      0, 0, 100, 100,
-      0, 0, 1, 1, reinterpret_cast<void*>(pixels), &bi, DIB_RGB_COLORS, SRCCOPY);
+      0, 0, 300, 100,
+      0, 0, 3, 1, reinterpret_cast<void*>(pixels), &bi, DIB_RGB_COLORS, SRCCOPY);
 
       EndPaint(hWnd, &ps);
    }
