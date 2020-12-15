@@ -3,6 +3,8 @@
 #include <stdexcept>
 #include <windows.h>
 
+//TODO: El formato de Windows es BGRA
+
 HWND g_window;
 constexpr const char g_lpClassName[] = "Window";
 
@@ -15,6 +17,7 @@ int main()
    WNDCLASSEX wcex = {0};
    wcex.cbSize = sizeof(WNDCLASSEX);
    wcex.hInstance = hInstance;
+   wcex.hbrBackground = (HBRUSH)GetStockObject(BLACK_BRUSH);
    wcex.lpszClassName = g_lpClassName;
    wcex.lpfnWndProc = WndProc;
    wcex.style = CS_HREDRAW | CS_VREDRAW;
@@ -48,10 +51,6 @@ int main()
 
 LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
-   // B G R
-   static uint8_t pixels[] = {
-      0, 0, 255, 255, 0, 255, 0, 255, 255, 0, 0, 255
-   };
 // Add a reader image
    switch(msg) {
    case WM_CREATE: {
@@ -60,22 +59,23 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
    case WM_PAINT: {
       PAINTSTRUCT ps;
       HDC hDC = BeginPaint(hWnd, &ps);
-
-      BITMAPINFO bi = {0};
-      bi.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
-      bi.bmiHeader.biPlanes = 1;
-      bi.bmiHeader.biWidth = 3;
-      bi.bmiHeader.biHeight = -1;
-      bi.bmiHeader.biBitCount = 32;
-      bi.bmiHeader.biCompression = BI_RGB;
-
       static image_t image = {0};
       static bool init = false;
 
       if(!init) {
          init = true;
-         image = image_from_filename("C:\\Users\\Usuario\\Desktop\\example.jpg");
+         if(!image_from_filename(&image, __argv[1])) {
+            puts("Error al abrir la imagen!");
+         }
       }
+
+      BITMAPINFO bi = {0};
+      bi.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
+      bi.bmiHeader.biPlanes = 1;
+      bi.bmiHeader.biWidth = image.width;
+      bi.bmiHeader.biHeight = -image.height;
+      bi.bmiHeader.biBitCount = 32;
+      bi.bmiHeader.biCompression = BI_RGB;
 
       StretchDIBits(hDC,
       0, 0, image.width, image.height,

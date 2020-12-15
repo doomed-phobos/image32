@@ -4,9 +4,9 @@
 
 #include <memory>
 
-image_t image_from_filename(const char filename[])
+bool image_from_filename(image_t* dstImg, const char filename[])
 {
-   std::unique_ptr<IO> io(new JpegIO);
+   std::unique_ptr<IO> io(new JpegIO(filename));
 
-   return io->decode(filename);
+   return io->decode(dstImg);
 }

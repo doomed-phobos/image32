@@ -2,10 +2,15 @@
 #define IO_JPEG_H
 #include "io.h"
 
+#include <cstdio>
+
 class JpegIO : public IO
 {
 public:
-   virtual image_t decode(const char filename[]) override;
+   JpegIO(const char filename[]);
+   virtual bool decode(image_t* dstImg) override;
+private:
+   FILE* m_file;
 };
 
 #endif

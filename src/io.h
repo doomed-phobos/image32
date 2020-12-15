@@ -5,7 +5,7 @@
 class IO
 {
 public:
-   virtual image_t decode(const char filename[]) = 0;
+   virtual bool decode(image_t* dstImg) = 0;
 };
 
 #endif

@@ -1,6 +1,7 @@
 #include "io_jpeg.h"
 
 #include <cstdlib>
+#include <cstring>
 #include <cstdio>
 
 extern "C"
@@ -8,74 +9,80 @@ extern "C"
 #include "jpeglib.h"
 }
 
-image_t JpegIO::decode(const char filename[])
+JpegIO::JpegIO(const char filename[])
 {
-   FILE* srcFile;
-   image_t image = {0};
-   jpeg_decompress_struct cinfo;
+   m_file = fopen(filename, "rb");
+}
+
+bool JpegIO::decode(image_t* dstImg)
+{
+   if(!m_file) return false;
+
+   jpeg_decompress_struct dinfo;
    jpeg_error_mgr jerr;
-   JDIMENSION buffer_height;
-   JSAMPARRAY buffer = NULL;
 
-   if((srcFile = fopen(filename, "rb")) == nullptr) {
-      printf("Error al abrir el archivo %s\n", filename);
-      return image_t();
+   dinfo.err = jpeg_std_error(&jerr);
+
+   jpeg_create_decompress(&dinfo);
+   jpeg_stdio_src(&dinfo, m_file);
+   (void)jpeg_read_header(&dinfo, TRUE);
+   (void)jpeg_start_decompress(&dinfo);
+
+   dstImg->width = dinfo.output_width;
+   dstImg->height = dinfo.output_height;
+   dstImg->colorSpace = (ColorSpace)dinfo.out_color_space;
+
+
+   JDIMENSION buffer_height = dinfo.rec_outbuf_height;
+   JSAMPARRAY buffer = (JSAMPARRAY)malloc(sizeof(JSAMPROW) * buffer_height);
+   if (!buffer) {
+      jpeg_destroy_decompress(&dinfo);
+      return false;
    }
 
-   cinfo.err = jpeg_std_error(&jerr);
-
-   jpeg_create_decompress(&cinfo);
-   jpeg_stdio_src(&cinfo, srcFile);
-   (void)jpeg_read_header(&cinfo, TRUE);
-   (void)jpeg_start_decompress(&cinfo);
-
-   image.width = cinfo.output_width;
-   image.height = cinfo.output_height;
-
-   buffer_height = cinfo.rec_outbuf_height;
-   buffer = (JSAMPARRAY)malloc(sizeof(JSAMPROW) * buffer_height);
-   if(!buffer) {
-      jpeg_destroy_decompress(&cinfo);
-      return image_t();
-   }
-
-   for (int c = 0; c<(int)buffer_height; c++) {
-      buffer[c] = (JSAMPROW)malloc(sizeof(JSAMPLE) * cinfo.output_width * cinfo.output_components);
+   for (int c=0; c<(int)buffer_height; c++) {
+      buffer[c] = (JSAMPROW)malloc(sizeof(JSAMPLE) *
+                                       dinfo.output_width * dinfo.output_components);
       if (!buffer[c]) {
-      for (c--; c>=0; c--)
-         free(buffer[c]);
+         for (c--; c>=0; c--)
+            free(buffer[c]);
          free(buffer);
-         jpeg_destroy_decompress(&cinfo);
-      return image_t();
+         jpeg_destroy_decompress(&dinfo);
+         return false;
       }
-  }
+   }
+  
+   std::size_t for_rows = sizeof(address_t) * dinfo.output_height;
+   std::size_t rowstride_bytes = dstImg->width * 4;
+   std::size_t required_size = for_rows + rowstride_bytes*dstImg->height;
 
-   std::size_t for_rows = sizeof(address_t) * cinfo.output_height;
-   std::size_t rowstride_bytes = image.width * 4;
-   std::size_t required_size = for_rows + rowstride_bytes*image.height;
-   image.pixels = new pixel_t[required_size];
+   dstImg->pixels = new pixel_t[required_size];
+   //memset(dstImg->pixels, 0, sizeof(pixel_t) * required_size);
+   uint32_t xy = 0;
+      
+   while(dinfo.output_scanline < dinfo.output_height) {
+      JDIMENSION num_scanlines = jpeg_read_scanlines(&dinfo, buffer, buffer_height);
 
-   while(cinfo.output_scanline < cinfo.output_height) {
-      JDIMENSION num_scanlines = jpeg_read_scanlines(&cinfo, buffer, buffer_height);
-      address_t dst;
-      address_t src;
-//TODO: OBTENER LOS PIXELES
-      for(int y = 0; y < num_scanlines; y++) {
-         src = ((address_t*)buffer)[y];
-         dst = (address_t)image.pixels[cinfo.output_scanline-1+y];
-         for(int x = 0; x < image.width; x++) {
-            int r = *(src++);
-            int g = *(src++);
-            int b = *(src++);
-            //dst = (address_t)image.pixels[0];
-            *(dst++) = 0;
-            *(dst++) = 0;
-            *(dst++) = 0;
-            puts("A");
-            //*(dst++) = 255;
-         }
+      if(dstImg->colorSpace == ColorSpace::RGB) {
+         uint8_t* src_address;
+         int x, y;
+
+            for (y=0; y<(int)num_scanlines; y++) {
+               src_address = ((uint8_t**)buffer)[y];
+
+               for (x=0; x<dstImg->width; x++) {
+                  int r = *(src_address++);
+                  int g = *(src_address++);
+                  int b = *(src_address++);
+
+                  dstImg->pixels[xy++] = b;
+                  dstImg->pixels[xy++] = g;
+                  dstImg->pixels[xy++] = r;
+                  dstImg->pixels[xy++] = 255;
+               }
+            }
       }
    }
 
-   return image;
+   return true;
 }
