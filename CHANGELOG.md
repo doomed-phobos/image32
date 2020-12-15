@@ -1,7 +1,7 @@
 # Changelog
 All changes in this project will be recorded in this file
 
-### 0.1.0 - 2020-12-15
+### [0.1.0] - 2020-12-15
 #### Added
 -  Support for **JPG** images
 #### Security
