@@ -1,5 +1,7 @@
 #include "io_jpeg.h"
 
+#include "string.h"
+
 #include <cstdlib>
 #include <cstring>
 #include <cstdio>
@@ -11,7 +13,7 @@ extern "C"
 
 JpegIO::JpegIO(const char filename[])
 {
-   m_file = fopen(filename, "rb");
+   m_file = _wfopen(from_utf8(filename).c_str(), L"rb");
 }
 
 bool JpegIO::decode(image_t* dstImg)
