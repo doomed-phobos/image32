@@ -22,6 +22,7 @@ namespace img32
       address_t pixels;
    };
 
+   /// @brief Read a image with JPG format
    bool image_from_filename(image_t* dstImg, const char filename[]);
 } // namespace img32
 
