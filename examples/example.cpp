@@ -1,4 +1,4 @@
-#include "image.h"
+#include "image32.h"
 
 #include <stdexcept>
 #include <windows.h>
@@ -59,12 +59,11 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
    case WM_PAINT: {
       PAINTSTRUCT ps;
       HDC hDC = BeginPaint(hWnd, &ps);
-      static image_t image = {0};
+      static img32::image_t image = {0};
       static bool init = false;
-
       if(!init) {
          init = true;
-         if(!image_from_filename(&image, __argv[1])) {
+         if(!img32::image_from_filename(&image, __argv[1])) {
             puts("Error al abrir la imagen!");
          }
       }

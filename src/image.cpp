@@ -4,9 +4,12 @@
 
 #include <memory>
 
-bool image_from_filename(image_t* dstImg, const char filename[])
+namespace img32
 {
-   std::unique_ptr<IO> io(new JpegIO(filename));
+   bool image_from_filename(image_t* dstImg, const char filename[])
+   {
+      std::unique_ptr<IO> io(new JpegIO(filename));
 
-   return io->decode(dstImg);
-}
+      return io->decode(dstImg);
+   }
+} // namespace img32
