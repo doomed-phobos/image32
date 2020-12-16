@@ -1,3 +1,6 @@
 [submodule "3rd_party/libpng"]
 	path = 3rd_party/libpng
 	url = https://github.com/surreal-Ceres/libpng.git
+[submodule "module"]
+	path = module
+	url = https://github.com/surreal-Ceres/miscellany.git
