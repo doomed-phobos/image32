@@ -63,7 +63,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
       static bool init = false;
       if(!init) {
          init = true;
-         if(!img32::image_from_filename(&image, __argv[1])) {
+         if(!img32::image_from_filename(&image, "C:\\Users\\Usuario\\Desktop\\example.png")) {
             puts("Error al abrir la imagen!");
          }
       }

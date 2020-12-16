@@ -7,6 +7,12 @@ namespace img32
    typedef uint8_t pixel_t;
    typedef pixel_t* address_t;
 
+   enum class ImageFormat
+   {
+      JPEG,
+      PNG
+   };
+
    enum class ColorSpace
    {
       UNKNOWN,
