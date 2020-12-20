@@ -56,7 +56,64 @@ std::string get_extension(const std::string& filename)
 
 namespace img32
 {
-   bool image_from_filename(image_t* dstImg, const char filename[])
+   Image::Image() :
+   m_width(0),
+   m_height(0),
+   m_rows(nullptr),
+   m_colorSpace(ColorSpace::UNKNOWN)
+   {}
+
+   Image Image::Make(const int width, const int height, ColorSpace cs)
+   {
+      Image image;
+      image.m_colorSpace = cs;
+      image.m_width = width;
+      image.m_height = height;
+
+      std::size_t for_rows = sizeof(address_t) * height;
+      std::size_t rowstride_bytes = width * 4;
+      std::size_t required_size = for_rows + rowstride_bytes*height;
+      image.m_buffer.resize(required_size);
+      image.m_rows = (address_t*)&image.m_buffer[0];
+      image.m_bits = (address_t)(&image.m_buffer[0] + for_rows);
+
+      address_t addr = image.m_bits;
+      for(int y = 0; y < height; y++) {
+         image.m_rows[y] = addr;
+         addr = (address_t)(((uint8_t*)addr) + rowstride_bytes);
+      }
+
+      return image;
+   }
+
+   uint32_t Image::width() const
+   {
+      return m_width;
+   }
+   
+   uint32_t Image::height() const
+   {
+      return m_height;
+   }
+
+   ColorSpace Image::colorSpace() const
+   {
+      return m_colorSpace;
+   }
+   
+   address_t Image::getPixels() const
+   {
+      return getPixelAddress(0, 0);
+   }
+
+   address_t Image::getPixelAddress(int x, int y) const
+   {
+      assert(x >= 0 && x <= width());
+      assert(y >= 0 && y <= height());
+      return address(x, y);
+   }
+
+   bool image_from_filename(Image* dstImg, const char filename[])
    {
       std::unique_ptr<IO> io(new NoneIO);
       

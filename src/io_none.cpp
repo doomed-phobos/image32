@@ -4,8 +4,9 @@
 
 namespace img32
 {
-   bool NoneIO::decode(image_t* dstImg)
+   bool NoneIO::decode(Image* dstImg)
    {
+      *dstImg = Image::Make(0, 0, ColorSpace::UNKNOWN);
       puts("Extension de imagen no soportada!");
       return false;
    }

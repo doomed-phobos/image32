@@ -10,7 +10,7 @@ namespace img32
    {
    public:
       JpegIO(const char filename[]);
-      virtual bool decode(image_t* dstImg) override;
+      virtual bool decode(Image* dstImg) override;
    private:
       FILE* m_file;
    };

@@ -16,7 +16,7 @@ namespace img32
       m_file = fopen(filename, "rb");
    }
 
-   bool JpegIO::decode(image_t* dstImg)
+   bool JpegIO::decode(Image* dstImg)
    {
       if(!m_file) return false;
 
@@ -30,9 +30,11 @@ namespace img32
       (void)jpeg_read_header(&dinfo, TRUE);
       (void)jpeg_start_decompress(&dinfo);
 
-      dstImg->width = dinfo.output_width;
-      dstImg->height = dinfo.output_height;
-      dstImg->colorSpace = (ColorSpace)dinfo.out_color_space;
+      int width = dinfo.output_width;
+      int height = dinfo.output_height;
+      ColorSpace cs = (dinfo.out_color_space == JCS_RGB ? ColorSpace::RGB : ColorSpace::GRAYSCALE);
+
+      *dstImg = Image::Make(width, height, cs);
 
       JDIMENSION buffer_height = dinfo.rec_outbuf_height;
       JSAMPARRAY buffer = new JSAMPROW[buffer_height];
@@ -51,32 +53,27 @@ namespace img32
             return false;
          }
       }
-   
-      std::size_t for_rows = sizeof(address_t) * dinfo.output_height;
-      std::size_t rowstride_bytes = dstImg->width * 4;
-      std::size_t required_size = for_rows + rowstride_bytes*dstImg->height;
-
-      dstImg->pixels = new pixel_t[required_size];
-      uint32_t xy = 0;
-         
+        
       while(dinfo.output_scanline < dinfo.output_height) {
          JDIMENSION num_scanlines = jpeg_read_scanlines(&dinfo, buffer, buffer_height);
 
-         if(dstImg->colorSpace == ColorSpace::RGB) {
+         if(dstImg->colorSpace() == ColorSpace::RGB) {
             uint8_t* src_address;
+            uint8_t* dst_address;
 
                for (int y=0; y<(int)num_scanlines; y++) {
                   src_address = ((uint8_t**)buffer)[y];
+                  dst_address = (uint8_t*)dstImg->getPixelAddress(0, dinfo.output_scanline-1+y);
 
-                  for (int x=0; x<dstImg->width; x++) {
+                  for (int x=0; x<dstImg->width(); x++) {
                      int r = *(src_address++);
                      int g = *(src_address++);
                      int b = *(src_address++);
-
-                     dstImg->pixels[xy++] = b;
-                     dstImg->pixels[xy++] = g;
-                     dstImg->pixels[xy++] = r;
-                     dstImg->pixels[xy++] = 255;
+                     //TODO: BGRA
+                     *(dst_address++) = b;
+                     *(dst_address++) = g;
+                     *(dst_address++) = r;
+                     *(dst_address++) = 255;
                   }
                }
          }

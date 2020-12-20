@@ -59,26 +59,31 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
    case WM_PAINT: {
       PAINTSTRUCT ps;
       HDC hDC = BeginPaint(hWnd, &ps);
-      static img32::image_t image = {0};
+      static img32::Image image;
       static bool init = false;
       if(!init) {
          init = true;
-         if(!img32::image_from_filename(&image, "C:\\Users\\Usuario\\Desktop\\example.png")) {
+         if(!img32::image_from_filename(&image, "C:\\Users\\Usuario\\Desktop\\README.PNG")) {
             puts("Error al abrir la imagen!");
+         }else {
+            printf("Width: %d\n"
+                   "Height: %d\n"
+                   "Colorspace: %d\n",
+                   image.width(), image.height(), image.colorSpace());
          }
       }
 
       BITMAPINFO bi = {0};
       bi.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
       bi.bmiHeader.biPlanes = 1;
-      bi.bmiHeader.biWidth = image.width;
-      bi.bmiHeader.biHeight = -image.height;
+      bi.bmiHeader.biWidth = image.width();
+      bi.bmiHeader.biHeight = -image.height();
       bi.bmiHeader.biBitCount = 32;
       bi.bmiHeader.biCompression = BI_RGB;
 
       StretchDIBits(hDC,
-      0, 0, image.width, image.height,
-      0, 0, image.width, image.height, reinterpret_cast<void*>(image.pixels), &bi, DIB_RGB_COLORS, SRCCOPY);
+      0, 0, image.width(), image.height(),
+      0, 0, image.width(), image.height(), reinterpret_cast<void*>(image.getPixels()), &bi, DIB_RGB_COLORS, SRCCOPY);
 
       EndPaint(hWnd, &ps);
    }

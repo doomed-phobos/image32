@@ -7,7 +7,7 @@ namespace img32
    class NoneIO : public IO
    {
    public:
-      virtual bool decode(image_t* dstImg) override;
+      virtual bool decode(Image* dstImg) override;
    };
 } // namespace img32
 

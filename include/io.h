@@ -7,7 +7,7 @@ namespace img32
    class IO
    {
    public:
-      virtual bool decode(image_t* dstImg) = 0;
+      virtual bool decode(Image* dstImg) = 0;
    };
 } // namespace img32
 
