@@ -13,3 +13,7 @@ All changes in this project will be recorded in this file
 -  Now you can't deliberately resize images
 #### Changed
 -  Changed **struct image_t** to **class Image**
+
+### [0.3.0] - 2020-12-21
+#### Added
+-  Support for **BMP** images

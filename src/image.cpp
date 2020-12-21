@@ -2,7 +2,9 @@
 
 #include "io_png.h"
 #include "io_jpeg.h"
+#include "io_webp.h"
 #include "io_none.h"
+#include "io_bmp.h"
 
 #include <memory>
 #include <string>
@@ -16,10 +18,12 @@ std::string string_to_lower(const std::string& str);
 img32::ImageFormat get_image_format(const std::string& filename)
 {
    std::string ext = string_to_lower(get_extension(filename));
-   img32::ImageFormat format;
+   img32::ImageFormat format = img32::ImageFormat::UNKNOWN;
 
    if(ext == "jpg" || ext == "jpeg") format = img32::ImageFormat::JPEG;
    if(ext == "png") format = img32::ImageFormat::PNG;
+   if(ext == "webp") format = img32::ImageFormat::WEBP;
+   if(ext == "bmp" || ext == "dib") format = img32::ImageFormat::BMP;
 
    return format;
 }
@@ -117,8 +121,20 @@ namespace img32
    {
       std::unique_ptr<IO> io(new NoneIO);
       
-      if(get_image_format(filename) == ImageFormat::JPEG) io.reset(new JpegIO(filename));
-      else if(get_image_format(filename) == ImageFormat::PNG) io.reset(new PngIO(filename));
+      switch(get_image_format(filename)) {
+      case ImageFormat::JPEG:
+         io.reset(new JpegIO(filename));
+         break;
+      case ImageFormat::PNG:
+         io.reset(new PngIO(filename));
+         break;
+      case ImageFormat::WEBP:
+         io.reset(new WebpIO(filename));
+         break;
+      case ImageFormat::BMP:
+         io.reset(new BmpIO(filename));
+         break;
+      }
 
       return io->decode(dstImg);
    }

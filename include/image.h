@@ -11,8 +11,11 @@ namespace img32
 
    enum class ImageFormat
    {
+      UNKNOWN,
       JPEG,
-      PNG
+      PNG,
+      WEBP,
+      BMP
    };
 
    enum class ColorSpace
@@ -54,7 +57,7 @@ namespace img32
       static Image Make(const int width, const int height, ColorSpace cs);
    };
 
-   /// @brief Read a image with JPG format
+   /// @brief Read a image with JPG, BMP, PNG format
    bool image_from_filename(Image* dstImg, const char filename[]);
 } // namespace img32
 

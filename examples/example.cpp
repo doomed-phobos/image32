@@ -5,6 +5,7 @@
 
 //TODO: El formato de Windows es BGRA
 
+static img32::Image image;
 HWND g_window;
 constexpr const char g_lpClassName[] = "Window";
 
@@ -24,7 +25,7 @@ int main()
    if(!RegisterClassEx(&wcex)) throw std::runtime_error("Error al registar una clase!");
    
    g_window = CreateWindowEx(
-      WS_EX_APPWINDOW,
+      WS_EX_APPWINDOW | WS_EX_ACCEPTFILES,
       g_lpClassName,
       "Image Viewer",
       WS_OVERLAPPEDWINDOW,
@@ -53,39 +54,44 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 // Add a reader image
    switch(msg) {
-   case WM_CREATE: {
-   }
-   break;
    case WM_PAINT: {
       PAINTSTRUCT ps;
       HDC hDC = BeginPaint(hWnd, &ps);
-      static img32::Image image;
-      static bool init = false;
-      if(!init) {
-         init = true;
-         if(!img32::image_from_filename(&image, "C:\\Users\\Usuario\\Desktop\\README.PNG")) {
-            puts("Error al abrir la imagen!");
-         }else {
-            printf("Width: %d\n"
-                   "Height: %d\n"
-                   "Colorspace: %d\n",
-                   image.width(), image.height(), image.colorSpace());
-         }
+      
+      if(image.width() > 0 && image.height() > 0) {
+         BITMAPINFO bi = {0};
+         bi.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
+         bi.bmiHeader.biPlanes = 1;
+         bi.bmiHeader.biWidth = image.width();
+         bi.bmiHeader.biHeight = -image.height();
+         bi.bmiHeader.biBitCount = 32;
+         bi.bmiHeader.biCompression = BI_RGB;
+
+         StretchDIBits(hDC,
+         0, 0, image.width(), image.height(), 
+         0, 0, image.width(), image.height(), reinterpret_cast<void*>(image.getPixels()), &bi, DIB_RGB_COLORS, SRCCOPY);
       }
 
-      BITMAPINFO bi = {0};
-      bi.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
-      bi.bmiHeader.biPlanes = 1;
-      bi.bmiHeader.biWidth = image.width();
-      bi.bmiHeader.biHeight = -image.height();
-      bi.bmiHeader.biBitCount = 32;
-      bi.bmiHeader.biCompression = BI_RGB;
-
-      StretchDIBits(hDC,
-      0, 0, image.width(), image.height(),
-      0, 0, image.width(), image.height(), reinterpret_cast<void*>(image.getPixels()), &bi, DIB_RGB_COLORS, SRCCOPY);
-
       EndPaint(hWnd, &ps);
+   }
+      break;
+   case WM_DROPFILES: {
+      HDROP hdrop = (HDROP)(wParam);
+
+      int count = DragQueryFile(hdrop, 0xFFFFFFFF, NULL, 0);
+      for (int index=0; index<count; ++index) {
+            int length = DragQueryFile(hdrop, index, NULL, 0);
+            if (length > 0) {
+               std::vector<TCHAR> str(length+1);
+               DragQueryFile(hdrop, index, &str[0], str.size());
+               img32::image_from_filename(&image, &str[0]);
+               printf("Width: %d\n"
+                      "Height: %d\n", image.width(), image.height());
+               InvalidateRect(hWnd, nullptr, TRUE);
+            }
+      }
+
+      DragFinish(hdrop);
    }
       break;
    case WM_DESTROY:

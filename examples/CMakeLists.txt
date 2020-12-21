@@ -1,2 +1,5 @@
-add_executable(example example.cpp)
-target_link_libraries(example image32)
+include(AddExample)
+
+if(IMG32_EXAMPLES)
+   img32_add_example(example)
+endif()
