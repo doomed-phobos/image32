@@ -56,15 +56,33 @@ void read_header_bmp(bmp_decoder_ptr bmp)
    bmp->header.compression = read32(bmp->infile);
 }
 
-void read_24bit_bmp(uint8_t* src, int width, FILE* file)
+void read_24bit_bmp(img32::Image* dstImg, uint8_t* dst_address, FILE* file)
 {
    int i;
 
-   for(i = 0; i < width; i++) {
-      *(src++) = read8(file);
-      *(src++) = read8(file);
-      *(src++) = read8(file);
-      *(src++) = 255;
+   for(i = 0; i < dstImg->width(); i++) {
+      int b = read8(file);
+      int g = read8(file);
+      int r = read8(file);
+      switch(dstImg->pixelFormat()) {
+      case img32::PixelFormat::BGRA:
+         *(dst_address++) = b;
+         *(dst_address++) = g;
+         *(dst_address++) = r;
+         *(dst_address++) = 255;
+         break;
+      case img32::PixelFormat::RGB:
+         *(dst_address++) = r;
+         *(dst_address++) = g;
+         *(dst_address++) = b;
+         break;
+      case img32::PixelFormat::RGBA:
+         *(dst_address++) = r;
+         *(dst_address++) = g;
+         *(dst_address++) = b;
+         *(dst_address++) = 255;
+         break;
+      }
    }
 
    i = (3*i) % 4;
@@ -82,7 +100,7 @@ void read_array_bmp(img32::Image* dstImg, bmp_decoder_ptr bmp)
       uint8_t* dst_address = (uint8_t*)dstImg->getPixelAddress(0, bmp->header.height-y-1);
       switch(bmp->header.bitCount) {
       case 24:
-         read_24bit_bmp(dst_address, bmp->header.width, bmp->infile);
+         read_24bit_bmp(dstImg, dst_address, bmp->infile);
          break;
       }
    }
@@ -115,7 +133,7 @@ namespace img32
       stdio_bmp_decoder(&bmp, m_file);
       read_header_bmp(&bmp);
       
-      *dstImg = Image::Make(bmp.header.width, bmp.header.height , ColorSpace::RGB);
+      *dstImg = Image::Make(bmp.header.width, bmp.header.height, dstImg->pixelFormat());
       
       read_array_bmp(dstImg, &bmp);
 

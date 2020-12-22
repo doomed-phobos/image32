@@ -2,6 +2,11 @@
 
 #include "png.h"
 
+#define GETA(color) ((color >> 24) & 0xff)
+#define GETR(color) ((color >> 0) & 0xff)
+#define GETG(color) ((color >> 8) & 0xff)
+#define GETB(color) ((color >> 16) & 0xff)
+
 namespace img32
 {
    PngIO::PngIO(const char filename[])
@@ -24,7 +29,7 @@ namespace img32
       int color_type = 0;
       int interlace_type = 0;
       int sig_read = 0;
-      ColorSpace cs;
+      png_color_16p png_transp = NULL;
 
       png_structp png = png_create_read_struct(PNG_LIBPNG_VER_STRING, NULL, png_show_error, png_show_error);
       if(!png) return false;
@@ -53,26 +58,12 @@ namespace img32
 
       png_read_update_info(png, info);
 
-      switch(png_get_color_type(png, info)) {
-      case PNG_COLOR_TYPE_RGBA:
-         cs = ColorSpace::RGB;
-         break;
-      case PNG_COLOR_TYPE_GRAY:
-      case PNG_COLOR_TYPE_GRAY_ALPHA:
-         cs = ColorSpace::GRAYSCALE;
-         break;   
-      case PNG_COLOR_TYPE_PALETTE:
-         cs = ColorSpace::INDEXED;
-         break;
-      default:
-         cs = ColorSpace::UNKNOWN;
-         break;
-      }
-
       int imgWidth = png_get_image_width(png, info);
       int imgHeight = png_get_image_height(png, info);
 
-      *dstImg = Image::Make(imgWidth, imgHeight, cs);
+      *dstImg = Image::Make(imgWidth, imgHeight, dstImg->pixelFormat());
+
+      png_get_tRNS(png, info, nullptr, nullptr, &png_transp);
 
       rows_pointer = (png_bytepp)png_malloc(png, sizeof(png_bytep)*height);
       for(int y = 0; y < height; y++)
@@ -85,18 +76,49 @@ namespace img32
       for(int y = 0; y < height; y++) {
          uint8_t* src_address = rows_pointer[y];
          uint8_t* dst_address = (uint8_t*)dstImg->getPixelAddress(0, y);
+         int r, g, b, a;
+         for(int x = 0; x < width; x++) {
+            if(png_get_color_type(png, info) == PNG_COLOR_TYPE_RGBA) {
+                  r = *(src_address++);
+                  g = *(src_address++);
+                  b = *(src_address++);
+                  a = *(src_address++);
+            }else if(png_get_color_type(png, info) == PNG_COLOR_TYPE_RGB) {
+                     r = *(src_address++);
+                     g = *(src_address++);
+                     b = *(src_address++);
+                     if(png_transp &&
+                     r == png_transp->red &&
+                     g == png_transp->green &&
+                     b == png_transp->blue) {
+                        a = 0;
+                     }else a = 255;
+            }else if(png_get_color_type(png, info) == PNG_COLOR_TYPE_PALETTE) {
+                  int rgba = *(src_address++);
+                  r = GETB(rgba);
+                  g = GETG(rgba);
+                  b = GETR(rgba);
+                  a = GETA(rgba);
+            }
 
-         if(dstImg->colorSpace() == ColorSpace::RGB) {
-            for(int x = 0; x < width; x++) {
-               int r = *(src_address++);
-               int g = *(src_address++);
-               int b = *(src_address++);
-               int a = *(src_address++);
-               //TODO: BGRA
+            switch(dstImg->pixelFormat()) {
+            case PixelFormat::RGB:
+               *(dst_address++) = r;
+               *(dst_address++) = g;
+               *(dst_address++) = b;
+               break;
+            case PixelFormat::RGBA:
+               *(dst_address++) = r;
+               *(dst_address++) = g;
+               *(dst_address++) = b;
+               *(dst_address++) = a;
+               break;
+            case PixelFormat::BGRA:
                *(dst_address++) = b;
                *(dst_address++) = g;
                *(dst_address++) = r;
                *(dst_address++) = a;
+               break;
             }
          }
          png_free(png, rows_pointer[y]);

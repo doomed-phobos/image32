@@ -27,14 +27,14 @@ namespace img32
 
       jpeg_create_decompress(&dinfo);
       jpeg_stdio_src(&dinfo, m_file);
+      jpeg_save_markers(&dinfo, JPEG_APP0+2, 0xffff);
       (void)jpeg_read_header(&dinfo, TRUE);
       (void)jpeg_start_decompress(&dinfo);
 
       int width = dinfo.output_width;
       int height = dinfo.output_height;
-      ColorSpace cs = (dinfo.out_color_space == JCS_RGB ? ColorSpace::RGB : ColorSpace::GRAYSCALE);
 
-      *dstImg = Image::Make(width, height, cs);
+      *dstImg = Image::Make(width, height, dstImg->pixelFormat());
 
       JDIMENSION buffer_height = dinfo.rec_outbuf_height;
       JSAMPARRAY buffer = new JSAMPROW[buffer_height];
@@ -56,27 +56,39 @@ namespace img32
         
       while(dinfo.output_scanline < dinfo.output_height) {
          JDIMENSION num_scanlines = jpeg_read_scanlines(&dinfo, buffer, buffer_height);
+         uint8_t* src_address;
+         uint8_t* dst_address;
 
-         if(dstImg->colorSpace() == ColorSpace::RGB) {
-            uint8_t* src_address;
-            uint8_t* dst_address;
+            for (int y=0; y<(int)num_scanlines; y++) {
+               src_address = ((uint8_t**)buffer)[y];
+               dst_address = (uint8_t*)dstImg->getPixelAddress(0, dinfo.output_scanline-1+y);
 
-               for (int y=0; y<(int)num_scanlines; y++) {
-                  src_address = ((uint8_t**)buffer)[y];
-                  dst_address = (uint8_t*)dstImg->getPixelAddress(0, dinfo.output_scanline-1+y);
-
-                  for (int x=0; x<dstImg->width(); x++) {
-                     int r = *(src_address++);
-                     int g = *(src_address++);
-                     int b = *(src_address++);
-                     //TODO: BGRA
+               for (int x=0; x<dstImg->width(); x++) {
+                  int r = *(src_address++);
+                  int g = *(src_address++);
+                  int b = *(src_address++);
+                  switch(dstImg->pixelFormat()) {
+                  case PixelFormat::RGBA:
+                     *(dst_address++) = r;
+                     *(dst_address++) = g;
+                     *(dst_address++) = b;
+                     *(dst_address++) = 255;
+                     break;
+                  case PixelFormat::BGRA:
                      *(dst_address++) = b;
                      *(dst_address++) = g;
                      *(dst_address++) = r;
                      *(dst_address++) = 255;
+                     break;
+                  case PixelFormat::RGB:
+                     *(dst_address++) = r;
+                     *(dst_address++) = g;
+                     *(dst_address++) = b;
+                     break;                     
                   }
+                  //TODO: BGRA
                }
-         }
+            }
       }
       
       for(int i = 0; i < (int)buffer_height; i++)
