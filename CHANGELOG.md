@@ -17,3 +17,13 @@ All changes in this project will be recorded in this file
 ### [0.3.0] - 2020-12-21
 #### Added
 -  Support for **BMP** images
+
+### [0.3.1] - 2020-12-21
+#### Added
+-  libpng: You can read images with different types of colors (INDEXED, RGBA, RGB)
+#### Changed
+-  The detection by extension was changed to detection by content
+
+### [0.3.2] - 2020-12-22
+#### Added
+-  Pixel format (RGB, RGBA, BGRA) is now allowed

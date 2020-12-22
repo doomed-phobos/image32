@@ -14,11 +14,12 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 //int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nShowCmd)
 int main()
 {
+   image.setPixelFormat(img32::PixelFormat::BGRA);
    HINSTANCE hInstance = GetModuleHandle(nullptr);
    WNDCLASSEX wcex = {0};
    wcex.cbSize = sizeof(WNDCLASSEX);
    wcex.hInstance = hInstance;
-   wcex.hbrBackground = (HBRUSH)GetStockObject(BLACK_BRUSH);
+   wcex.hbrBackground = (HBRUSH)(COLOR_WINDOW+1);
    wcex.lpszClassName = g_lpClassName;
    wcex.lpfnWndProc = WndProc;
    wcex.style = CS_HREDRAW | CS_VREDRAW;
@@ -68,8 +69,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
          bi.bmiHeader.biCompression = BI_RGB;
 
          StretchDIBits(hDC,
-         0, 0, image.width(), image.height(), 
-         0, 0, image.width(), image.height(), reinterpret_cast<void*>(image.getPixels()), &bi, DIB_RGB_COLORS, SRCCOPY);
+         20, 20, image.width(), image.height(), 
+         20, 20, image.width(), image.height(), reinterpret_cast<void*>(image.getPixels()), &bi, DIB_RGB_COLORS, SRCCOPY);
       }
 
       EndPaint(hWnd, &ps);
