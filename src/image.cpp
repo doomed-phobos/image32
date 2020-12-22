@@ -9,53 +9,47 @@
 #include <memory>
 #include <string>
 
+#define BMP_MAGIC_NUMBER 0x4D42
+#define JPG_MAGIC_NUMBER 0xD8FF
+#define PNG_MAGIC_NUMBER1 0x474E5089
+#define PNG_MAGIC_NUMBER2 0x0A1A0A0D
+#define TIFF_MAGIC_NUMBER1 0x002A4949
+#define TIFF_MAGIC_NUMBER2 0x00
+#define ARRAYSIZE(buf) sizeof(buf) / sizeof(buf[0])
+
 //===================================================================
 img32::ImageFormat get_image_format(const std::string& filename);
-std::string get_extension(const std::string& filename);
-std::string string_to_lower(const std::string& str);
+img32::ImageFormat get_image_format(const uint8_t buf[8]);
 //===================================================================
 
 img32::ImageFormat get_image_format(const std::string& filename)
 {
-   std::string ext = string_to_lower(get_extension(filename));
+   FILE* file = fopen(filename.c_str(), "rb");
+   uint8_t buf[8];
+   
+   fread(buf, 1, ARRAYSIZE(buf), file);
+
+   return get_image_format(buf);
+}
+
+img32::ImageFormat get_image_format(const uint8_t buf[8])
+{
+   #define IS_MAGIC_WORD(offset, word)          \
+      (buf[0+offset] == (word & 0xff) &&        \
+      (buf[1+offset] == ((word & 0xff00) >> 8)))
+   #define IS_MAGIC_DWORD(offset, dword)              \
+      (buf[0+offset] == (dword & 0xff) &&             \
+      (buf[1+offset] == ((dword & 0xff00) >> 8)) &&   \
+      (buf[2+offset] == ((dword & 0xff0000) >> 16)) &&\
+      (buf[3+offset] == ((dword & 0xff000000) >> 24)))
+
    img32::ImageFormat format = img32::ImageFormat::UNKNOWN;
 
-   if(ext == "jpg" || ext == "jpeg") format = img32::ImageFormat::JPEG;
-   if(ext == "png") format = img32::ImageFormat::PNG;
-   if(ext == "webp") format = img32::ImageFormat::WEBP;
-   if(ext == "bmp" || ext == "dib") format = img32::ImageFormat::BMP;
+   if(IS_MAGIC_WORD(0, JPG_MAGIC_NUMBER)) format = img32::ImageFormat::JPEG;
+   if(IS_MAGIC_WORD(0, BMP_MAGIC_NUMBER)) format = img32::ImageFormat::BMP;
+   if(IS_MAGIC_DWORD(0, PNG_MAGIC_NUMBER1) && (IS_MAGIC_DWORD(4, PNG_MAGIC_NUMBER2))) format = img32::ImageFormat::PNG;
 
    return format;
-}
-
-std::string string_to_lower(const std::string& original)
-{
-   std::string result(original);
-
-   auto it = result.begin();
-   
-   while(it != result.end()) {
-      *it = tolower(*it);
-      it++;
-   }
-
-   return result;
-}
-
-std::string get_extension(const std::string& filename)
-{
-   std::string::const_reverse_iterator rit;
-   std::string ext;
-
-   for(rit = filename.rbegin(); rit < filename.rend(); rit++) {
-      if(*rit == '.') break;
-   }
-
-   if(rit != filename.rend()) {
-      std::copy(std::string::const_iterator(rit.base()), filename.end(), std::back_inserter(ext));
-   }
-
-   return ext;
 }
 
 namespace img32
@@ -64,18 +58,24 @@ namespace img32
    m_width(0),
    m_height(0),
    m_rows(nullptr),
-   m_colorSpace(ColorSpace::UNKNOWN)
+   m_pixelFormat(PixelFormat::RGB)
    {}
 
-   Image Image::Make(const int width, const int height, ColorSpace cs)
+   void Image::setPixelFormat(const PixelFormat pf)
+   {
+      m_pixelFormat = pf;
+   }
+
+   Image Image::Make(const int width, const int height, PixelFormat pf)
    {
       Image image;
-      image.m_colorSpace = cs;
       image.m_width = width;
+      image.setPixelFormat(pf);
       image.m_height = height;
+      uint8_t colors = (pf == PixelFormat::BGRA || pf == PixelFormat::RGBA ? 4 : 3);
 
       std::size_t for_rows = sizeof(address_t) * height;
-      std::size_t rowstride_bytes = width * 4;
+      std::size_t rowstride_bytes = width * colors;
       std::size_t required_size = for_rows + rowstride_bytes*height;
       image.m_buffer.resize(required_size);
       image.m_rows = (address_t*)&image.m_buffer[0];
@@ -100,11 +100,11 @@ namespace img32
       return m_height;
    }
 
-   ColorSpace Image::colorSpace() const
+   PixelFormat Image::pixelFormat() const
    {
-      return m_colorSpace;
+      return m_pixelFormat;
    }
-   
+
    address_t Image::getPixels() const
    {
       return getPixelAddress(0, 0);
@@ -120,6 +120,7 @@ namespace img32
    bool image_from_filename(Image* dstImg, const char filename[])
    {
       std::unique_ptr<IO> io(new NoneIO);
+      printf("PixelFOrmat: %d\n", dstImg->pixelFormat());
       
       switch(get_image_format(filename)) {
       case ImageFormat::JPEG:
