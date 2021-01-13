@@ -27,11 +27,12 @@ All changes in this project will be recorded in this file
 ### [0.3.2] - 2020-12-22
 #### Added
 -  Pixel format (RGB, RGBA, BGRA) is now allowed
-//TODO: CAMBIAR A INGLES
 ### [0.4.0] - 2021-01-10
 #### Added
--  Se añadió la decodificacion de diferentes tipos de PNG
+-  Added decoding of different types of PNG
+-  Pixels stored within a vector
+-  Pixels R, G, B, A have been joined and set within a uint32_t
 #### Changed
--  Se cambio la funcion ```image_from_filename``` a ```Image::loadFromFilename```
+-  The function ```image_from_filename``` was changed to ```Image :: loadFromFilename```
 #### Removed
--  Se elimino la posible compatibilidad para .gif y webp (¿se agregará en otras versiones?)
+-  Removed possible support for .gif and webp (will it be added in other versions?)
