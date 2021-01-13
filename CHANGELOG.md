@@ -27,3 +27,11 @@ All changes in this project will be recorded in this file
 ### [0.3.2] - 2020-12-22
 #### Added
 -  Pixel format (RGB, RGBA, BGRA) is now allowed
+//TODO: CAMBIAR A INGLES
+### [0.4.0] - 2021-01-10
+#### Added
+-  Se añadió la decodificacion de diferentes tipos de PNG
+#### Changed
+-  Se cambio la funcion ```image_from_filename``` a ```Image::loadFromFilename```
+#### Removed
+-  Se elimino la posible compatibilidad para .gif y webp (¿se agregará en otras versiones?)

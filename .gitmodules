@@ -7,3 +7,6 @@
 [submodule "3rd_party/libwebp"]
 	path = 3rd_party/libwebp
 	url = https://github.com/surreal-Ceres/libwebp.git
+[submodule "3rd_party/giflib"]
+	path = 3rd_party/giflib
+	url = https://github.com/surreal-Ceres/giflib.git

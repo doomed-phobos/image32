@@ -1,3 +1,2 @@
-Añadir soporte para imagenes ICO, ¿WEBP?, ¿GIF?, TIFF
-Modificar el tipo de pixeles de uint8 a otros (uint16, uint32, etc)
+Añadir soporte para imagenes ICO, TIFF
 ¿Añadir la posibilidad de escribir imagenes?
