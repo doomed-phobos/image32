@@ -2,15 +2,13 @@
 #define IO_BMP_H
 #include "io.h"
 
-#include <cstdio>
-
 namespace img32
 {
-   class BmpIO : public IO
+   class BmpIO : public ImgIO
    {
    public:
       BmpIO(const char filename[]);
-      virtual bool decode(Image* dstImg) override;
+      virtual bool decode(Image* dstImg, ColorType ct) override;
    private:
       FILE* m_file;
    };

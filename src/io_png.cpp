@@ -1,11 +1,8 @@
 #include "io_png.h"
 
-#include "png.h"
+#include "image_priv.h"
 
-#define GETA(color) ((color >> 24) & 0xff)
-#define GETR(color) ((color >> 0) & 0xff)
-#define GETG(color) ((color >> 8) & 0xff)
-#define GETB(color) ((color >> 16) & 0xff)
+#include "png.h"
 
 namespace img32
 {
@@ -19,7 +16,7 @@ namespace img32
       printf("libpng: %s\n", error_msg);
    }
 
-   bool PngIO::decode(Image* dstImg)
+   bool PngIO::decode(Image* dstImg, ColorType ct)
    {
       if(!m_file) return false;
       png_uint_32 width = 0;
@@ -61,7 +58,7 @@ namespace img32
       int imgWidth = png_get_image_width(png, info);
       int imgHeight = png_get_image_height(png, info);
 
-      *dstImg = Image::Make(imgWidth, imgHeight, dstImg->pixelFormat());
+      *dstImg = Image(ImageInfo::Make(imgWidth, imgHeight, ct));
 
       png_get_tRNS(png, info, nullptr, nullptr, &png_transp);
 
@@ -75,9 +72,9 @@ namespace img32
 
       for(int y = 0; y < height; y++) {
          uint8_t* src_address = rows_pointer[y];
-         uint8_t* dst_address = (uint8_t*)dstImg->getPixelAddress(0, y);
-         int r, g, b, a;
+         color_t r, g, b, a;
          for(int x = 0; x < width; x++) {
+         address_t dst_address = dstImg->writable_addr32(x, y);
             if(png_get_color_type(png, info) == PNG_COLOR_TYPE_RGBA) {
                   r = *(src_address++);
                   g = *(src_address++);
@@ -95,37 +92,19 @@ namespace img32
                      }else a = 255;
             }else if(png_get_color_type(png, info) == PNG_COLOR_TYPE_PALETTE) {
                   int rgba = *(src_address++);
-                  r = GETB(rgba);
-                  g = GETG(rgba);
-                  b = GETR(rgba);
-                  a = GETA(rgba);
+                  r = getR(rgba);
+                  g = getG(rgba);
+                  b = getB(rgba);
+                  a = getA(rgba);
             }
 
-            switch(dstImg->pixelFormat()) {
-            case PixelFormat::RGB:
-               *(dst_address++) = r;
-               *(dst_address++) = g;
-               *(dst_address++) = b;
-               break;
-            case PixelFormat::RGBA:
-               *(dst_address++) = r;
-               *(dst_address++) = g;
-               *(dst_address++) = b;
-               *(dst_address++) = a;
-               break;
-            case PixelFormat::BGRA:
-               *(dst_address++) = b;
-               *(dst_address++) = g;
-               *(dst_address++) = r;
-               *(dst_address++) = a;
-               break;
-            }
+            SetPixelsIntoAddress(dst_address, dstImg->colorType(), r, g, b, a);
          }
          png_free(png, rows_pointer[y]);
       }
 
       png_free(png, rows_pointer);
-
+      fclose(m_file);
       return true;
    }
 } // namespace img32

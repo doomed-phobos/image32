@@ -1,5 +1,6 @@
 #include "io_bmp.h"
 
+#include "image_priv.h"
 #include "file.h"
 
 #include <cstring>
@@ -8,6 +9,8 @@
 #define BMP_FIELD 0x4D42
 #define BMP_RGB 0x00
 #define BMP_ERROR(bmp, msg) bmp->bmp_error_fn(bmp, msg)
+
+using namespace img32;
 
 typedef struct bmp_decoder* bmp_decoder_ptr;
 
@@ -56,33 +59,17 @@ void read_header_bmp(bmp_decoder_ptr bmp)
    bmp->header.compression = read32(bmp->infile);
 }
 
-void read_24bit_bmp(img32::Image* dstImg, uint8_t* dst_address, FILE* file)
+void read_24bit_bmp(Image* dstImg, int scanline, bmp_decoder_ptr bmp)
 {
    int i;
-
+   address_t dst_address;
+   FILE* file = bmp->infile;
    for(i = 0; i < dstImg->width(); i++) {
-      int b = read8(file);
-      int g = read8(file);
-      int r = read8(file);
-      switch(dstImg->pixelFormat()) {
-      case img32::PixelFormat::BGRA:
-         *(dst_address++) = b;
-         *(dst_address++) = g;
-         *(dst_address++) = r;
-         *(dst_address++) = 255;
-         break;
-      case img32::PixelFormat::RGB:
-         *(dst_address++) = r;
-         *(dst_address++) = g;
-         *(dst_address++) = b;
-         break;
-      case img32::PixelFormat::RGBA:
-         *(dst_address++) = r;
-         *(dst_address++) = g;
-         *(dst_address++) = b;
-         *(dst_address++) = 255;
-         break;
-      }
+      color_t b = read8(file);
+      color_t g = read8(file);
+      color_t r = read8(file);
+      dst_address = dstImg->writable_addr32(i, bmp->header.height-scanline-1);
+      SetPixelsIntoAddress(dst_address, dstImg->colorType(), r, g, b, 255);
    }
 
    i = (3*i) % 4;
@@ -91,16 +78,14 @@ void read_24bit_bmp(img32::Image* dstImg, uint8_t* dst_address, FILE* file)
          read8(file);
 }
 
-void read_array_bmp(img32::Image* dstImg, bmp_decoder_ptr bmp)
+void read_array_bmp(Image* dstImg, bmp_decoder_ptr bmp)
 {
    offset(bmp->infile, bmp->array_offset);
-   printf("BitCount: %d\n", bmp->header.bitCount);
 
    for(int y = 0; y < bmp->header.height; y++) {
-      uint8_t* dst_address = (uint8_t*)dstImg->getPixelAddress(0, bmp->header.height-y-1);
       switch(bmp->header.bitCount) {
       case 24:
-         read_24bit_bmp(dstImg, dst_address, bmp->infile);
+         read_24bit_bmp(dstImg, y, bmp);
          break;
       }
    }
@@ -108,7 +93,7 @@ void read_array_bmp(img32::Image* dstImg, bmp_decoder_ptr bmp)
 
 namespace img32
 {
-   void bmp_error(bmp_decoder_ptr bmp, const char* error_msg)
+   void bmp_defaulterror(bmp_decoder_ptr bmp, const char* error_msg)
    {
       puts(error_msg);
       longjmp(bmp->_jmp_buf, 1);
@@ -119,11 +104,11 @@ namespace img32
       m_file = fopen(filename, "rb");
    }
 
-   bool BmpIO::decode(Image* dstImg)
+   bool BmpIO::decode(Image* dstImg, ColorType ct)
    {
       if(!m_file) return false;
       bmp_decoder bmp;
-      bmp.bmp_error_fn = bmp_error;
+      bmp.bmp_error_fn = bmp_defaulterror;
 
       if(setjmp(bmp._jmp_buf)) {
          puts("Error to load BMP!");
@@ -133,10 +118,11 @@ namespace img32
       stdio_bmp_decoder(&bmp, m_file);
       read_header_bmp(&bmp);
       
-      *dstImg = Image::Make(bmp.header.width, bmp.header.height, dstImg->pixelFormat());
+      *dstImg = Image(ImageInfo::Make(bmp.header.width, bmp.header.height, ct)); 
       
       read_array_bmp(dstImg, &bmp);
-
+      
+      fclose(m_file);
       return true;
    }
 } // namespace img32

@@ -1,5 +1,8 @@
 #include "io_jpeg.h"
 
+#include "image_priv.h"
+
+#include <csetjmp>
 #include <cstdlib>
 #include <cstring>
 #include <cstdio>
@@ -9,32 +12,61 @@ extern "C"
 #include "jpeglib.h"
 }
 
+struct error_mgr
+{
+   jpeg_error_mgr jerr;
+   jmp_buf setjmp_buf;
+};
+
 namespace img32
 {
+   void default_errorfn(j_common_ptr cinfo)
+   {
+      jpeg_error_mgr* err = cinfo->err;
+
+      char buf[JMSG_LENGTH_MAX];
+      err->format_message(cinfo, buf);
+
+      printf("jpeglib: %s\n", buf);
+      //longjmp(((error_mgr*)err)->setjmp_buf, 1);
+   }
+
    JpegIO::JpegIO(const char filename[])
    {
       m_file = fopen(filename, "rb");
    }
 
-   bool JpegIO::decode(Image* dstImg)
+   bool JpegIO::decode(Image* dstImg, ColorType ct)
    {
       if(!m_file) return false;
 
       jpeg_decompress_struct dinfo;
-      jpeg_error_mgr jerr;
+      error_mgr err;
 
-      dinfo.err = jpeg_std_error(&jerr);
+      dinfo.err = jpeg_std_error(&err.jerr);
+      err.jerr.error_exit = default_errorfn;
+
+      if(setjmp(err.setjmp_buf)) {
+         jpeg_destroy_decompress(&dinfo);
+         return false;
+      }
 
       jpeg_create_decompress(&dinfo);
       jpeg_stdio_src(&dinfo, m_file);
       jpeg_save_markers(&dinfo, JPEG_APP0+2, 0xffff);
       (void)jpeg_read_header(&dinfo, TRUE);
+
+      if(dinfo.jpeg_color_space == JCS_GRAYSCALE)
+         dinfo.out_color_space = JCS_GRAYSCALE;
+      else
+         dinfo.out_color_space = JCS_RGB;
+
       (void)jpeg_start_decompress(&dinfo);
 
       int width = dinfo.output_width;
       int height = dinfo.output_height;
-
-      *dstImg = Image::Make(width, height, dstImg->pixelFormat());
+      *dstImg = Image(ImageInfo::Make(width, height, ct)); 
+      printf("Jpeg colorspace: %d\n", dinfo.jpeg_color_space);
 
       JDIMENSION buffer_height = dinfo.rec_outbuf_height;
       JSAMPARRAY buffer = new JSAMPROW[buffer_height];
@@ -53,40 +85,30 @@ namespace img32
             return false;
          }
       }
-        
+
       while(dinfo.output_scanline < dinfo.output_height) {
          JDIMENSION num_scanlines = jpeg_read_scanlines(&dinfo, buffer, buffer_height);
          uint8_t* src_address;
-         uint8_t* dst_address;
+         address_t dst_address;
 
             for (int y=0; y<(int)num_scanlines; y++) {
                src_address = ((uint8_t**)buffer)[y];
-               dst_address = (uint8_t*)dstImg->getPixelAddress(0, dinfo.output_scanline-1+y);
+               color_t r, g, b;
 
                for (int x=0; x<dstImg->width(); x++) {
-                  int r = *(src_address++);
-                  int g = *(src_address++);
-                  int b = *(src_address++);
-                  switch(dstImg->pixelFormat()) {
-                  case PixelFormat::RGBA:
-                     *(dst_address++) = r;
-                     *(dst_address++) = g;
-                     *(dst_address++) = b;
-                     *(dst_address++) = 255;
-                     break;
-                  case PixelFormat::BGRA:
-                     *(dst_address++) = b;
-                     *(dst_address++) = g;
-                     *(dst_address++) = r;
-                     *(dst_address++) = 255;
-                     break;
-                  case PixelFormat::RGB:
-                     *(dst_address++) = r;
-                     *(dst_address++) = g;
-                     *(dst_address++) = b;
-                     break;                     
+                  dst_address = dstImg->writable_addr32(x, dinfo.output_scanline-1+y);
+                  if(dinfo.out_color_space == JCS_RGB) {
+                     r = *(src_address++);
+                     g = *(src_address++);
+                     b = *(src_address++);
+                  }else if(dinfo.out_color_space == JCS_GRAYSCALE){
+                     int grayscale = *(src_address++);
+                     r = grayscale;
+                     g = grayscale;
+                     b = grayscale;
                   }
-                  //TODO: BGRA
+
+                  SetPixelsIntoAddress(dst_address, dstImg->colorType(), r, g, b, 255);
                }
             }
       }
@@ -97,7 +119,7 @@ namespace img32
 
       jpeg_finish_decompress(&dinfo);
       jpeg_destroy_decompress(&dinfo);
-
+      fclose(m_file);
       return true;
    }
 } // namespace img32

@@ -1,6 +1,13 @@
 #include "file.h"
 
+#include <cstring>
 #include <cstdio>
+
+#define BMP_MAGIC_NUMBER 0x4D42
+#define JPG_MAGIC_NUMBER 0xD8FF
+#define PNG_MAGIC_NUMBER1 0x474E5089
+#define PNG_MAGIC_NUMBER2 0x0A1A0A0D
+#define ARRAYSIZE(buf) sizeof(buf) / sizeof(buf[0])
 
 void offset(FILE* file, long offset)
 {
@@ -58,3 +65,36 @@ namespace big_endian
                b1);
    }
 } // namespace big_endian
+
+namespace img32
+{
+   ImageFormat get_image_format(const std::string& filename)
+   {
+         FILE* file = fopen(filename.c_str(), "rb");
+         uint8_t buf[8];
+         
+         fread(buf, 1, ARRAYSIZE(buf), file);
+
+         return get_image_format(buf);
+   }
+
+   ImageFormat get_image_format(const uint8_t buf[8])
+   {
+      #define IS_MAGIC_WORD(offset, word)          \
+         (buf[0+offset] == (word & 0xff) &&        \
+         (buf[1+offset] == ((word & 0xff00) >> 8)))
+      #define IS_MAGIC_DWORD(offset, dword)              \
+         (buf[0+offset] == (dword & 0xff) &&             \
+         (buf[1+offset] == ((dword & 0xff00) >> 8)) &&   \
+         (buf[2+offset] == ((dword & 0xff0000) >> 16)) &&\
+         (buf[3+offset] == ((dword & 0xff000000) >> 24)))
+
+      ImageFormat format = ImageFormat::UNKNOWN;
+
+      if(IS_MAGIC_WORD(0, JPG_MAGIC_NUMBER)) format = ImageFormat::JPEG;
+      if(IS_MAGIC_WORD(0, BMP_MAGIC_NUMBER)) format = ImageFormat::BMP;
+      if(IS_MAGIC_DWORD(0, PNG_MAGIC_NUMBER1) && (IS_MAGIC_DWORD(4, PNG_MAGIC_NUMBER2))) format = ImageFormat::PNG;
+
+      return format;
+   }
+} // namespace img32

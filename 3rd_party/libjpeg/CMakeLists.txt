@@ -46,4 +46,4 @@ add_library(libjpeg
   jquant2.c
   jutils.c)
 
-target_include_directories(libjpeg PUBLIC .)
+target_include_directories(libjpeg PUBLIC ".")

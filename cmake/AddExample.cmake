@@ -1,4 +1,10 @@
+if(IMG32_SHARED)
+   set(IMG32_LIBNAME image32)
+else()
+   set(IMG32_LIBNAME image32_static)
+endif()
+
 function(img32_add_example FILENAME)
    add_executable(${FILENAME} "${FILENAME}.cpp")
-   target_link_libraries(${FILENAME} image32)
+   target_link_libraries(${FILENAME} ${IMG32_LIBNAME})
 endfunction(img32_add_example FILENAME)

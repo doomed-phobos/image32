@@ -2,15 +2,13 @@
 #define IO_PNG_H
 #include "io.h"
 
-#include <cstdio>
-
 namespace img32
 {
-   class PngIO : public IO
+   class PngIO : public ImgIO
    {
    public:
       PngIO(const char filename[]);
-      virtual bool decode(Image* dstImg) override;
+      virtual bool decode(Image* dstImg, ColorType ct) override;
    private:
       FILE* m_file;
    };

@@ -1,20 +1,20 @@
-#include "image32.h"
+#include "image32/image32.h"
 
+#include <iostream>
 #include <stdexcept>
 #include <windows.h>
 
 //TODO: El formato de Windows es BGRA
 
-static img32::Image image;
 HWND g_window;
 constexpr const char g_lpClassName[] = "Window";
+img32::Image image;
 
 LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
 //int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nShowCmd)
 int main()
 {
-   image.setPixelFormat(img32::PixelFormat::BGRA);
    HINSTANCE hInstance = GetModuleHandle(nullptr);
    WNDCLASSEX wcex = {0};
    wcex.cbSize = sizeof(WNDCLASSEX);
@@ -70,7 +70,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 
          StretchDIBits(hDC,
          20, 20, image.width(), image.height(), 
-         20, 20, image.width(), image.height(), reinterpret_cast<void*>(image.getPixels()), &bi, DIB_RGB_COLORS, SRCCOPY);
+         0, 0, image.width(), image.height(), image.getPixels(), &bi, DIB_RGB_COLORS, SRCCOPY);
       }
 
       EndPaint(hWnd, &ps);
@@ -85,7 +85,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
             if (length > 0) {
                std::vector<TCHAR> str(length+1);
                DragQueryFile(hdrop, index, &str[0], str.size());
-               img32::image_from_filename(&image, &str[0]);
+               image.loadFromFilename(&str[0], img32::BGRA_8888);
                printf("Width: %d\n"
                       "Height: %d\n", image.width(), image.height());
                InvalidateRect(hWnd, nullptr, TRUE);

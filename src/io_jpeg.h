@@ -2,15 +2,13 @@
 #define IO_JPEG_H
 #include "io.h"
 
-#include <cstdio>
-
 namespace img32
 {
-   class JpegIO : public IO
+   class JpegIO : public ImgIO
    {
    public:
       JpegIO(const char filename[]);
-      virtual bool decode(Image* dstImg) override;
+      virtual bool decode(Image* dstImg, ColorType ct) override;
    private:
       FILE* m_file;
    };
