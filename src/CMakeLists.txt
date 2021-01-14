@@ -1,3 +1,9 @@
+# Image32
+# Copyright (C) 2020-2021  surreal-Ceres
+#
+# Used this library under the terms of MIT license
+# Read LICENSE for more information
+
 set(IMG32_DEFINITIONS)
 set(INCLDIR ${PROJECT_SOURCE_DIR}/include)
 

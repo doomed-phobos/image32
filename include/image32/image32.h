@@ -1,10 +1,9 @@
 /// Image32
+/// Copyright (C) 2020-2021  surreal-Ceres
 ///
-/// Copyright (C) 2020-2021  surrealCeres
-///
-/// Used this library under the terms of *** license
+/// Used this library under the terms of MIT license
 /// Read LICENSE for more information
-//TODO: Añadir la decodificacion de PNG
+
 #ifndef IMAGE32_H
 #define IMAGE32_H
 

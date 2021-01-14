@@ -1,3 +1,9 @@
+# Image32
+# Copyright (C) 2020-2021  surreal-Ceres
+#
+# Used this library under the terms of MIT license
+# Read LICENSE for more information
+
 add_definitions(-D_CRT_SECURE_NO_WARNINGS)
 
 set(SKIP_INSTALL_ALL ON)
