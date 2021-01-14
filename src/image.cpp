@@ -1,13 +1,8 @@
 #include "image_priv.h"
 
-#include "file.h"
-#include "io_png.h"
-#include "io_jpeg.h"
-#include "io_none.h"
-#include "io_bmp.h"
+#include "image32/io.h"
 
 #include <cassert>
-#include <memory>
 
 namespace img32
 {
@@ -44,21 +39,7 @@ namespace img32
 
    bool Image::loadFromFilename(const char filename[], ColorType ct)
    {
-	  if(!filename) return false;
-      std::unique_ptr<ImgIO> io(new NoneIO());
-      //TODO: Escribir los pixeles para BMP, como en JpegIO
-      switch(get_image_format(filename)) {
-      case ImageFormat::JPEG:
-         io.reset(new JpegIO(filename));
-         break;
-      case ImageFormat::BMP:
-         io.reset(new BmpIO(filename));
-         break;
-      case ImageFormat::PNG:
-         io.reset(new PngIO(filename));
-         break;
-      }
-
-      return io->decode(this, ct);
+      ImgIO io(filename, ct);
+      return io.decode(this);
    }
 } // namespace img32

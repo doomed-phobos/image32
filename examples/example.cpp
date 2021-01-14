@@ -12,6 +12,16 @@ img32::Image image;
 
 LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
+class IOErrorDelegate : public img32::IOErrorDelegate
+{
+public:
+   virtual void OnError(const char* msg) override {
+      MessageBox(nullptr, msg, "", MB_OK);
+   }
+};
+
+IOErrorDelegate errDelegate;
+
 //int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nShowCmd)
 int main()
 {
@@ -69,7 +79,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
          bi.bmiHeader.biCompression = BI_RGB;
 
          StretchDIBits(hDC,
-         20, 20, image.width(), image.height(), 
+         0, 0, image.width(), image.height(), 
          0, 0, image.width(), image.height(), image.getPixels(), &bi, DIB_RGB_COLORS, SRCCOPY);
       }
 
@@ -85,7 +95,10 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
             if (length > 0) {
                std::vector<TCHAR> str(length+1);
                DragQueryFile(hdrop, index, &str[0], str.size());
-               image.loadFromFilename(&str[0], img32::BGRA_8888);
+               img32::ImgIO io(&str[0], img32::BGRA_8888);
+               io.setError(&errDelegate);
+               io.decode(&image);
+               //image.loadFromFilename(&str[0], img32::BGRA_8888);
                printf("Width: %d\n"
                       "Height: %d\n", image.width(), image.height());
                InvalidateRect(hWnd, nullptr, TRUE);

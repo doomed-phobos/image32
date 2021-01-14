@@ -1,5 +1,9 @@
 cmake_minimum_required(VERSION 3.2)
 
+if(MSVC)
+   set(CMAKE_CXX_FLAGS_DEBUG_INIT "/D_DEBUG /MTd /Zi /Ob0 /Ot /RTC1")
+endif()
+
 project(image32 CXX C)
 
 list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake")

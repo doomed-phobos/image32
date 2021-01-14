@@ -1,11 +1,13 @@
 #ifndef IMAGE_INFO_H
 #define IMAGE_INFO_H
+#include "config.h"
 #include "color_type.h"
 
 #include <cctype> 
 
 namespace img32
 {
+   /// Clase que crea informacion de una imagen a partir de su ancho, alto y tipo de color
    class IMG32_API ImageInfo
    {
    public:

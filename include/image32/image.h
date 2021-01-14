@@ -11,9 +11,12 @@ namespace img32
    typedef pixel_t* address_t;
    typedef const pixel_t* const_address_t;
 
+   /// Clase principal de esta librería.
+   /// Para cargar desde un archivo use Image::loadFromFilename
    class IMG32_API Image
    {
    public:
+      /// Crear una imagen vacia (Width = 0 y Height = 0)
       Image() {}
       /// Crea una clase Image con formato de pixel 'RGB' por defecto
       Image(const ImageInfo& info);
@@ -37,12 +40,12 @@ namespace img32
       ColorType colorType() const {return m_info.colorType();}
       int getBytesPerPixel() const {return m_info.getBytesPerPixel();}
 
+      /// Carga una imagen con un tipo determinado de color dentro
+      /// de un ImgIO sin ninguna configuracion
       bool loadFromFilename(const char filename[], ColorType ct);
       bool loadFromFilename(const char filename[]) {
-         return loadFromFilename(filename, ColorType::RGBA_8888);
+         return loadFromFilename(filename, colorType());
       }
-
-      static Image MakeEmpty();
    private:
       size_t m_requiredSize;
       ImageInfo m_info;

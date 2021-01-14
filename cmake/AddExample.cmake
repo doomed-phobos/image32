@@ -8,3 +8,8 @@ function(img32_add_example FILENAME)
    add_executable(${FILENAME} "${FILENAME}.cpp")
    target_link_libraries(${FILENAME} ${IMG32_LIBNAME})
 endfunction(img32_add_example FILENAME)
+
+function(img32_add_win32_example FILENAME)
+   add_executable(${FILENAME} WIN32 "${FILENAME}.cpp")
+   target_link_libraries(${FILENAME} ${IMG32_LIBNAME}) 
+endfunction()
