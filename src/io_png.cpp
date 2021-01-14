@@ -1,5 +1,5 @@
 #include "image_priv.h"
-
+//TODO: Error al abrir imagenes con color de modo PALETTE
 #include "file.h"
 #include "string.h"
 
