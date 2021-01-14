@@ -5,6 +5,7 @@
 #include <string>
 #include <cstdint>
 
+FILE* open_file(std::string filename, std::string mode);
 void offset(FILE* file, long offset);
 uint8_t read8(FILE* file);
 

@@ -1,13 +1,29 @@
 #include "file.h"
 
-#include <cstring>
+#include "string.h"
+
+#ifdef _WIN32
+   #include <windows.h>
+#endif
+
 #include <cstdio>
 
 #define BMP_MAGIC_NUMBER 0x4D42
 #define JPG_MAGIC_NUMBER 0xD8FF
 #define PNG_MAGIC_NUMBER1 0x474E5089
 #define PNG_MAGIC_NUMBER2 0x0A1A0A0D
+#ifndef _WIN32
 #define ARRAYSIZE(buf) sizeof(buf) / sizeof(buf[0])
+#endif
+
+FILE* open_file(std::string filename, std::string mode)
+{
+#ifdef _WIN32
+   return _wfopen(from_utf8(filename).c_str(), from_utf8(mode).c_str());
+#else
+   return fopen(filename.c_str(), mode.c_str());
+#endif
+}
 
 void offset(FILE* file, long offset)
 {
