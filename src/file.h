@@ -4,8 +4,20 @@
 
 #include <string>
 #include <cstdint>
+#include <memory>
 
-FILE* open_file(std::string filename, std::string mode);
+struct FileDeleter
+{
+   void operator()(FILE* file) {
+      if(file)
+         fclose(file);
+   }
+};
+
+/// Archivo que llama a fclose cuando sale del contexto
+typedef std::unique_ptr<FILE, FileDeleter> FileHandle;
+
+FileHandle open_file(std::string filename, std::string mode);
 void offset(FILE* file, long offset);
 uint8_t read8(FILE* file);
 

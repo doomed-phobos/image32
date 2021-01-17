@@ -16,12 +16,12 @@
 #define ARRAYSIZE(buf) sizeof(buf) / sizeof(buf[0])
 #endif
 
-FILE* open_file(std::string filename, std::string mode)
+FileHandle open_file(std::string filename, std::string mode)
 {
 #ifdef _WIN32
-   return _wfopen(from_utf8(filename).c_str(), from_utf8(mode).c_str());
+   return FileHandle(_wfopen(from_utf8(filename).c_str(), from_utf8(mode).c_str()));
 #else
-   return fopen(filename.c_str(), mode.c_str());
+   return FileHandle(fopen(filename.c_str(), mode.c_str()));
 #endif
 }
 
