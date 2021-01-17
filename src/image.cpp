@@ -39,7 +39,12 @@ namespace img32
 
    bool Image::loadFromFilename(const char filename[], ColorType ct)
    {
-      ImgIO io(filename, ct);
+      ImageIO io(filename, ct);
       return io.decode(this);
+   }
+
+   void Image::reset(const ImageInfo& info)
+   {
+      *this = Image(info);
    }
 } // namespace img32
