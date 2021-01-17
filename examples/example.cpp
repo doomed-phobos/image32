@@ -15,8 +15,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 class IOErrorDelegate : public img32::IOErrorDelegate
 {
 public:
-   virtual void OnError(const char* msg) override {
-      MessageBox(nullptr, msg, "", MB_OK);
+   virtual void OnError(img32::const_charp msg) override {
+      MessageBox(nullptr, msg, "Error decode", MB_OK);
    }
 };
 
@@ -88,15 +88,15 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
       break;
    case WM_DROPFILES: {
       HDROP hdrop = (HDROP)(wParam);
-
+      
       int count = DragQueryFile(hdrop, 0xFFFFFFFF, NULL, 0);
       for (int index=0; index<count; ++index) {
             int length = DragQueryFile(hdrop, index, NULL, 0);
             if (length > 0) {
                std::vector<TCHAR> str(length+1);
                DragQueryFile(hdrop, index, &str[0], str.size());
-               img32::ImgIO io(&str[0], img32::BGRA_8888);
-               io.setError(&errDelegate);
+               img32::ImageIO io(&str[0], img32::BGRA_8888);
+               io.setErrorDelegate(&errDelegate);
                io.decode(&image);
                //image.loadFromFilename(&str[0], img32::BGRA_8888);
                printf("Width: %d\n"
