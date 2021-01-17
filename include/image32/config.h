@@ -11,4 +11,10 @@
    #define IMG32_API
 #endif
 
+namespace img32
+{
+   typedef const char* const_charp;
+} // namespace img32
+
+
 #endif
