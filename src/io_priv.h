@@ -52,5 +52,4 @@ namespace img32::priv
    };
 } // namespace img32::priv
 
-
 #endif

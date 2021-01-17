@@ -37,7 +37,6 @@ namespace img32::priv
       err.jerr.error_exit = default_errorfn;
 
       if(setjmp(err.setjmp_buf)) {
-         // Obteniendo el mensaje de error para luego enviarlo a IO
          char buf[JMSG_LENGTH_MAX];
          err.jerr.format_message((j_common_ptr)&dinfo, buf);
          onError(format_to_string("jpeglib: %s", buf).c_str());

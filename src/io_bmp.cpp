@@ -37,8 +37,7 @@ namespace img32::priv
 
    void bmp_start_stdio(bmp_decoder_ptr bmp, FILE* file)
    {
-      // Estableciendo el cursor al inicio
-      fseek(file, 0, SEEK_SET);
+      fseek(file, 0, SEEK_SET); // Estableciendo el cursor al inicio
 
       if(little_endian::read16(file) != BMP_FIELD) BMP_ERROR(bmp, "File not is bitmap");
       size_t file_size = little_endian::read16(file);

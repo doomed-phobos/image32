@@ -1,9 +1,10 @@
 #include "io_priv.h"
-//TODO: Error al abrir imagenes con color de modo PALETTE
+
 #include "file.h"
 #include "string.h"
 
 #include "png.h"
+//TODO: Error al abrir imagenes con color de modo PALETTE
 
 namespace img32::priv
 {

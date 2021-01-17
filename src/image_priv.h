@@ -13,7 +13,7 @@ namespace img32
       BMP
    };
 
-   inline void SetPixelsIntoAddress(uint32_t* src_addr, ColorType ct, uint8_t r, uint8_t g, uint8_t b, uint8_t a)
+   inline void SetPixelsIntoAddress(address_t src_addr, ColorType ct, uint8_t r, uint8_t g, uint8_t b, uint8_t a)
    {
       switch(ct) {
       case RGB_888x:

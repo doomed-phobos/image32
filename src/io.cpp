@@ -1,7 +1,6 @@
 #include "image32/io.h"
 
 #include "io_priv.h"
-
 #include "time.h"
 
 namespace img32

@@ -2,8 +2,6 @@
 #define IO_H
 #include "image.h"
 
-#include <cstdio>
-
 namespace img32
 { 
    namespace priv {class ImageIOPriv;}
