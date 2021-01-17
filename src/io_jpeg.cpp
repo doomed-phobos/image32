@@ -1,4 +1,4 @@
-#include "image_priv.h"
+#include "io_priv.h"
 
 #include "string.h"
 #include "file.h"
@@ -8,7 +8,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <cstdio>
-//TODO: ARREGLAR LA VELOCIDAD DE DECODIFICACION DE UNA IMAGEN
+
 extern "C"
 {
 #include "jpeglib.h"
@@ -20,16 +20,16 @@ struct error_mgr
    jmp_buf setjmp_buf;
 };
 
-namespace img32
+namespace img32::priv
 {
    void default_errorfn(j_common_ptr cinfo)
    {
       longjmp(((error_mgr*)cinfo->err)->setjmp_buf, 1);
    }
 
-   bool JpgIO::decode(ImgIO* io, Image* dstImg)
+   bool ImageIOPriv::jpg_decode(Image* dstImg)
    {
-      FILE* file = open_file(io->filename(), "rb");
+      FileHandle file = open_file(filename(), "rb");
       jpeg_decompress_struct dinfo;
       error_mgr err;
 
@@ -40,13 +40,13 @@ namespace img32
          // Obteniendo el mensaje de error para luego enviarlo a IO
          char buf[JMSG_LENGTH_MAX];
          err.jerr.format_message((j_common_ptr)&dinfo, buf);
-         io->onError(format_to_string("jpeglib: %s", buf).c_str());
+         onError(format_to_string("jpeglib: %s", buf).c_str());
          jpeg_destroy_decompress(&dinfo);
          return false;
       }
 
       jpeg_create_decompress(&dinfo);
-      jpeg_stdio_src(&dinfo, file);
+      jpeg_stdio_src(&dinfo, file.get());
       (void)jpeg_read_header(&dinfo, true);
 
       if(dinfo.jpeg_color_space == JCS_GRAYSCALE)
@@ -58,7 +58,7 @@ namespace img32
 
       int width = dinfo.output_width;
       int height = dinfo.output_height;
-      *dstImg = Image(ImageInfo::Make(width, height, io->colorType())); 
+      dstImg->reset(ImageInfo::Make(width, height, colorType())); 
 
       JDIMENSION buffer_height = dinfo.rec_outbuf_height;
       JSAMPARRAY buffer = new JSAMPROW[buffer_height];
@@ -109,7 +109,6 @@ namespace img32
 
       jpeg_finish_decompress(&dinfo);
       jpeg_destroy_decompress(&dinfo);
-      fclose(file);
       return true;
    }
-} // namespace img32
+} // namespace img32::priv

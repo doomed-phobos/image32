@@ -1,4 +1,4 @@
-#include "image_priv.h"
+#include "io_priv.h"
 
 #include "file.h"
 #include "string.h"
@@ -7,13 +7,12 @@
 #include <csetjmp>
 
 #define BMP_FIELD 0x4D42
-#define BMP_RGB 0x00
-#define BMP_ERROR(bmp, msg) bmp->bmp_error_fn(bmp, msg)
+#define BMP_ERROR(bmp, msg) bmp->error_fn(bmp, msg)
 
-namespace img32
+namespace img32::priv
 {
    typedef struct bmp_decoder* bmp_decoder_ptr;
-   typedef void(*bmp_error)(bmp_decoder_ptr, const char*);
+   typedef void(*bmp_error_ptr)(bmp_decoder_ptr, const char*);
    typedef void* bmp_voidp;
 
    typedef struct bmp_header
@@ -29,16 +28,16 @@ namespace img32
    typedef struct bmp_decoder
    {
       FILE* infile;
-      bmp_error bmp_error_fn;
+      bmp_error_ptr error_fn;
       int array_offset;
       bmp_header header;
       jmp_buf _jmp_buf;
-      bmp_voidp data; //NOT USED
+      bmp_voidp data; //Reserved. NOT USED
    }*bmp_decoder_ptr;
 
    void bmp_start_stdio(bmp_decoder_ptr bmp, FILE* file)
    {
-      // Estableciendo el cursor del mouse al inicio
+      // Estableciendo el cursor al inicio
       fseek(file, 0, SEEK_SET);
 
       if(little_endian::read16(file) != BMP_FIELD) BMP_ERROR(bmp, "File not is bitmap");
@@ -95,30 +94,34 @@ namespace img32
 
    void bmp_show_error(bmp_decoder_ptr bmp, const char* error_msg)
    {
-      ImgIO* err = (ImgIO*)bmp->data;
-      err->onError(format_to_string("bitmap: %s", error_msg).c_str());
+      ImageIOPriv* err = (ImageIOPriv*)bmp->data;
+      if(err) err->onError(format_to_string("bitmap: %s", error_msg).c_str());
       longjmp(bmp->_jmp_buf, 1);
    }
 
-   bool BmpIO::decode(ImgIO* io, Image* dstImg)
+   void bmp_initialize(bmp_decoder_ptr bmp, bmp_voidp data, bmp_error_ptr error_fn)
    {
-      FILE* file = open_file(io->filename(), "rb");
+      bmp->data = data;
+      bmp->error_fn = error_fn;
+   }
+
+   uint32_t bmp_get_width(bmp_decoder_ptr bmp) {return bmp->header.width;}
+   uint32_t bmp_get_height(bmp_decoder_ptr bmp) {return bmp->header.height;}
+
+   bool ImageIOPriv::bmp_decode(Image* dstImg)
+   {
+      FileHandle file = open_file(filename(), "rb");
       bmp_decoder bmp;
-      bmp.data = (bmp_voidp)io;
-      bmp.bmp_error_fn = bmp_show_error;
 
-      if(setjmp(bmp._jmp_buf)) {
-         puts("Error to load BMP!");
-         return false;
-      }
+      bmp_initialize(&bmp, (bmp_voidp)this, bmp_show_error);
+      if(setjmp(bmp._jmp_buf)) return false;
 
-      bmp_start_stdio(&bmp, file);
+      bmp_start_stdio(&bmp, file.get());
       read_header_bmp(&bmp);
       
-      *dstImg = Image(ImageInfo::Make(bmp.header.width, bmp.header.height, io->colorType())); 
+      dstImg->reset(ImageInfo::Make(bmp_get_width(&bmp), bmp_get_height(&bmp), colorType()));
       
       read_array_bmp(dstImg, &bmp);
-      fclose(file);
       return true;
    }
-} // namespace img32
+} // namespace img32::priv

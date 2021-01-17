@@ -1,21 +1,21 @@
-#include "image_priv.h"
+#include "io_priv.h"
 //TODO: Error al abrir imagenes con color de modo PALETTE
 #include "file.h"
 #include "string.h"
 
 #include "png.h"
 
-namespace img32
+namespace img32::priv
 {
    void png_show_error(png_structp png, png_const_charp error_msg)
    {
-      ImgIO* err = (ImgIO*)png_get_error_ptr(png);
-      err->onError(format_to_string("libpng: %s", error_msg).c_str());
+      ImageIOPriv* impl = (ImageIOPriv*)png_get_error_ptr(png);
+      impl->onError(format_to_string("libpng: %s", error_msg).c_str());
    }
-
-   bool PngIO::decode(ImgIO* io, Image* dstImg)
+   
+   bool ImageIOPriv::png_decode(Image* dstImg)
    {
-      FILE* file = open_file(io->filename(), "rb");
+      FileHandle file = open_file(filename(), "rb");
       png_uint_32 width = 0;
       png_uint_32 height = 0;
       png_bytepp rows_pointer;
@@ -24,7 +24,7 @@ namespace img32
       int sig_read = 0;
       png_color_16p png_transp = NULL;
 
-      png_structp png = png_create_read_struct(PNG_LIBPNG_VER_STRING, (ImgIO*)io, png_show_error, png_show_error);
+      png_structp png = png_create_read_struct(PNG_LIBPNG_VER_STRING, (png_voidp)this, png_show_error, png_show_error);
       if(!png) return false;
       png_set_option(png, PNG_SKIP_sRGB_CHECK_PROFILE, PNG_OPTION_ON);
 
@@ -36,7 +36,7 @@ namespace img32
          return false;
       }
 
-      png_init_io(png, file);
+      png_init_io(png, file.get());
       png_set_sig_bytes(png, sig_read);
       png_read_info(png, info);
       png_get_IHDR(png, info, &width, &height, &bit_depth, &color_type,
@@ -62,7 +62,7 @@ namespace img32
       int imgWidth = png_get_image_width(png, info);
       int imgHeight = png_get_image_height(png, info);
 
-      *dstImg = Image(ImageInfo::Make(imgWidth, imgHeight, io->colorType()));
+      dstImg->reset(ImageInfo::Make(imgWidth, imgHeight, colorType()));
 
       rows_pointer = (png_bytepp)png_malloc(png, sizeof(png_bytep)*height);
       for(uint32_t y = 0; y < height; y++)
@@ -106,7 +106,6 @@ namespace img32
 
       png_free(png, rows_pointer);
       png_destroy_read_struct(&png, &info, nullptr);
-      fclose(file);
       return true;
    }
-} // namespace img32
+} // namespace img32::priv

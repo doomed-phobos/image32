@@ -1,47 +1,27 @@
 #include "image32/io.h"
 
-#include "image_priv.h"
-#include "file.h"
+#include "io_priv.h"
 
 #include "time.h"
 
-#include <memory>
-
 namespace img32
 {
-   ImgIO::ImgIO(const char* filename) :
-   ImgIO(filename, RGBA_8888)
+   ImageIO::ImageIO(const_charp filename) :
+   ImageIO(filename, RGBA_8888)
    {}
 
-   ImgIO::ImgIO(const char* filename, ColorType ct) :
-   m_filename(filename),
-   m_colorType(ct),
-   m_delegate(nullptr)
+   ImageIO::ImageIO(const_charp filename, ColorType ct) :
+   m_impl(new priv::ImageIOPriv(filename, ct))
    {}
 
-   void ImgIO::onError(const char* msg)
+   void ImageIO::setErrorDelegate(IOErrorDelegate* delegate)
    {
-      if(m_delegate)
-         m_delegate->OnError(msg);
+      m_impl->setErrorDelegate(delegate);
    }
 
-   bool ImgIO::decode(Image* dstImg)
+   bool ImageIO::decode(Image* dstImg)
    {
-	  Timer time;
-      std::unique_ptr<FileIO> io(new NoneIO);
-      
-      switch(get_image_format(m_filename)) {
-      case ImageFormat::JPEG:
-         io.reset(new JpgIO);
-         break;
-      case ImageFormat::BMP:
-         io.reset(new BmpIO);
-         break;
-      case ImageFormat::PNG:
-         io.reset(new PngIO);
-         break;
-      }
-
-      return io->decode(this, dstImg);
+	   Timer time;
+      return m_impl->decode(dstImg);
    }
 } // namespace img32

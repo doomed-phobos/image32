@@ -6,33 +6,25 @@
 
 namespace img32
 { 
+   namespace priv {class ImageIOPriv;}
+
    class IOErrorDelegate
    {
    public:
-      virtual void OnError(const char* msg) = 0;
+      virtual void OnError(const_charp msg) = 0;
    };
 
-   class IMG32_API ImgIO
+   class IMG32_API ImageIO
    {
    public:
-      ImgIO(const char* filename);
-      ImgIO(const char* filename, ColorType ct);
+      ImageIO(const_charp filename);
+      ImageIO(const_charp filename, ColorType ct);
 
-      void setError(IOErrorDelegate* delegate) {m_delegate = delegate;}
+      void setErrorDelegate(IOErrorDelegate* delegate);
 
       bool decode(Image* dstImg);
-
-      ColorType colorType() const {return m_colorType;}
-
-      const char* filename() const {return m_filename;}
-
-      void onError(const char* msg);
    private:
-      IOErrorDelegate* m_delegate;
-      ColorType m_colorType;
-      const char* m_errMsg;
-      const char* m_filename;
-      FILE* m_file;
+      priv::ImageIOPriv* m_impl;
    };
 } // namespace img32
 

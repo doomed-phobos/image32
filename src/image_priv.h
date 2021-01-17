@@ -1,7 +1,6 @@
 #ifndef IMAGE_PRIV_H
 #define IMAGE_PRIV_H
 #include "image32/image.h"
-#include "image32/io.h"
 #include "image32/color.h"
 
 namespace img32
@@ -13,39 +12,6 @@ namespace img32
       PNG,
       BMP
    };
-
-//////////////////////////////////////////////////////////////////////////////////////
-   class FileIO
-   {
-   public:
-      virtual bool decode(ImgIO* io, Image* dstImg) = 0;
-   };
-
-   class NoneIO : public FileIO
-   {
-   public:
-      virtual bool decode(ImgIO* io, Image* dstImg) override {return false;}
-   };
-
-   class JpgIO : public FileIO
-   {
-   public:
-      virtual bool decode(ImgIO* io, Image* dstImg) override;
-   private:
-   };
-
-   class PngIO : public FileIO
-   {
-   public:
-      virtual bool decode(ImgIO* io, Image* dstImg) override;
-   };
-
-   class BmpIO : public FileIO
-   {
-   public:
-      virtual bool decode(ImgIO* io, Image* dstImg) override;
-   };
-//////////////////////////////////////////////////////////////////////////////////////
 
    inline void SetPixelsIntoAddress(uint32_t* src_addr, ColorType ct, uint8_t r, uint8_t g, uint8_t b, uint8_t a)
    {
