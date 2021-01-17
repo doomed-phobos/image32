@@ -54,8 +54,6 @@ namespace img32
 
    ImageInfo ImageInfo::Make(int width, int height, ColorType ct)
    {
-      ImageInfo info(width, height, ct);
-      return info;
+      return ImageInfo(width, height, ct);
    }
-   //TODO: Hacer que se almacene correctamente el tamaño para una imagen
 } // namespace img32
