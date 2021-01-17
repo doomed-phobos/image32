@@ -11,7 +11,7 @@ namespace img32
    typedef pixel_t* address_t;
    typedef const pixel_t* const_address_t;
 
-   /// Clase principal de esta librería.
+   /// Clase principal de esta librería que contiene lo que compone una imagen
    /// Para cargar desde un archivo use Image::loadFromFilename
    class IMG32_API Image
    {
@@ -46,6 +46,8 @@ namespace img32
       bool loadFromFilename(const char filename[]) {
          return loadFromFilename(filename, colorType());
       }
+
+      void reset(const ImageInfo& info);
    private:
       size_t m_requiredSize;
       ImageInfo m_info;

@@ -15,6 +15,7 @@ if(WIN32)
 endif()
 
 set(IMG32_SOURCES
+   io_priv.h
    image_priv.h
    image.cpp
    image_info.cpp
