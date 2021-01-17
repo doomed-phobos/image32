@@ -2,7 +2,7 @@
 #define TIME_H
 #include <cstdio>
 #include <ctime>
-
+//TODO: Muestra el tiempo de una rutina, ELIMINAR CUANDO NO SE NECESITE
 class Timer
 {
 public:
