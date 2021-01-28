@@ -11,8 +11,8 @@
 
 namespace img32::priv
 {
-   typedef struct bmp_decoder* bmp_decoder_ptr;
-   typedef void(*bmp_error_ptr)(bmp_decoder_ptr, const char*);
+   typedef struct bmp_struct* bmp_struct_ptr;
+   typedef void(*bmp_error_ptr)(bmp_struct_ptr, const char*);
    typedef void* bmp_voidp;
 
    typedef struct bmp_header
@@ -25,7 +25,7 @@ namespace img32::priv
       uint16_t compression;
    }*bmp_header_ptr;
 
-   typedef struct bmp_decoder
+   typedef struct bmp_struct
    {
       FILE* infile;
       bmp_error_ptr error_fn;
@@ -33,9 +33,9 @@ namespace img32::priv
       bmp_header header;
       jmp_buf _jmp_buf;
       bmp_voidp data; //Reserved. NOT USED
-   }*bmp_decoder_ptr;
+   }*bmp_struct_ptr;
 
-   void bmp_start_stdio(bmp_decoder_ptr bmp, FILE* file)
+   void bmp_start_stdio(bmp_struct_ptr bmp, FILE* file)
    {
       fseek(file, 0, SEEK_SET); // Estableciendo el cursor al inicio
 
@@ -45,7 +45,7 @@ namespace img32::priv
       bmp->infile = file;
    }
 
-   void read_header_bmp(bmp_decoder_ptr bmp)
+   void read_header_bmp(bmp_struct_ptr bmp)
    {
       using namespace little_endian;
       offset(bmp->infile, 10);
@@ -58,17 +58,16 @@ namespace img32::priv
       bmp->header.compression = read32(bmp->infile);
    }
 
-   void read_24bit_bmp(Image* dstImg, int scanline, bmp_decoder_ptr bmp)
+   void read_24bit_bmp(Image* dstImg, int scanline, bmp_struct_ptr bmp)
    {
       int i;
-      address_t dst_address;
       FILE* file = bmp->infile;
       for(i = 0; i < dstImg->width(); i++) {
-         color_t b = read8(file);
-         color_t g = read8(file);
-         color_t r = read8(file);
-         dst_address = dstImg->writable_addr32(i, bmp->header.height-scanline-1);
-         SetPixelsIntoAddress(dst_address, dstImg->colorType(), r, g, b, 255);
+         channel_t b = read8(file);
+         channel_t g = read8(file);
+         channel_t r = read8(file);
+         address_t dst_address = dstImg->writable_addr32(i, bmp->header.height-scanline-1);
+         set_pixels_into_address(dst_address, dstImg->colorType(), r, g, b, 255);
       }
 
       i = (3*i) % 4;
@@ -77,7 +76,7 @@ namespace img32::priv
             read8(file);
    }
 
-   void read_array_bmp(Image* dstImg, bmp_decoder_ptr bmp)
+   void read_array_bmp(Image* dstImg, bmp_struct_ptr bmp)
    {
       offset(bmp->infile, bmp->array_offset);
 
@@ -91,26 +90,26 @@ namespace img32::priv
       }
    }
 
-   void bmp_show_error(bmp_decoder_ptr bmp, const char* error_msg)
+   void bmp_show_error(bmp_struct_ptr bmp, const char* error_msg)
    {
       ImageIOPriv* err = (ImageIOPriv*)bmp->data;
       if(err) err->onError(format_to_string("bitmap: %s", error_msg).c_str());
       longjmp(bmp->_jmp_buf, 1);
    }
 
-   void bmp_initialize(bmp_decoder_ptr bmp, bmp_voidp data, bmp_error_ptr error_fn)
+   void bmp_initialize(bmp_struct_ptr bmp, bmp_voidp data, bmp_error_ptr error_fn)
    {
       bmp->data = data;
       bmp->error_fn = error_fn;
    }
 
-   uint32_t bmp_get_width(bmp_decoder_ptr bmp) {return bmp->header.width;}
-   uint32_t bmp_get_height(bmp_decoder_ptr bmp) {return bmp->header.height;}
+   uint32_t bmp_get_width(bmp_struct_ptr bmp) {return bmp->header.width;}
+   uint32_t bmp_get_height(bmp_struct_ptr bmp) {return bmp->header.height;}
 
-   bool ImageIOPriv::bmp_decode(Image* dstImg)
+   bool ImageIOPriv::bmp_decode(Image* dstImg, ColorType ct)
    {
       FileHandle file = open_file(filename(), "rb");
-      bmp_decoder bmp;
+      bmp_struct bmp;
 
       bmp_initialize(&bmp, (bmp_voidp)this, bmp_show_error);
       if(setjmp(bmp._jmp_buf)) return false;
@@ -118,7 +117,7 @@ namespace img32::priv
       bmp_start_stdio(&bmp, file.get());
       read_header_bmp(&bmp);
       
-      dstImg->reset(ImageInfo::Make(bmp_get_width(&bmp), bmp_get_height(&bmp), colorType()));
+      dstImg->reset(ImageInfo::Make(bmp_get_width(&bmp), bmp_get_height(&bmp), ct));
       
       read_array_bmp(dstImg, &bmp);
       return true;
