@@ -14,32 +14,37 @@ extern "C"
 #include "jpeglib.h"
 }
 
-struct error_mgr
-{
-   jpeg_error_mgr jerr;
-   jmp_buf setjmp_buf;
-};
-
 namespace img32::priv
 {
-   void default_errorfn(j_common_ptr cinfo)
+   struct error_mgr
    {
-      longjmp(((error_mgr*)cinfo->err)->setjmp_buf, 1);
+      jpeg_error_mgr jerr;
+      jmp_buf setjmp_buf;
+      //Si se coloca antes de jmp_buf, causa un error
+      ImageIOPriv* io;
+   };
+
+   void jpg_error_exit(j_common_ptr cinfo)
+   {
+      error_mgr* err = (error_mgr*)cinfo->err;
+      char buf[JMSG_LENGTH_MAX];
+      
+      err->jerr.format_message(cinfo, buf);
+      err->io->onError(format_to_string("jpeglib: %s", buf).c_str());
+      longjmp(err->setjmp_buf, 1);
    }
 
-   bool ImageIOPriv::jpg_decode(Image* dstImg)
+   bool ImageIOPriv::jpg_decode(Image* dstImg, ColorType ct)
    {
       FileHandle file = open_file(filename(), "rb");
       jpeg_decompress_struct dinfo;
       error_mgr err;
 
+      err.io = this;
       dinfo.err = jpeg_std_error(&err.jerr);
-      err.jerr.error_exit = default_errorfn;
+      err.jerr.error_exit = jpg_error_exit;
 
       if(setjmp(err.setjmp_buf)) {
-         char buf[JMSG_LENGTH_MAX];
-         err.jerr.format_message((j_common_ptr)&dinfo, buf);
-         onError(format_to_string("jpeglib: %s", buf).c_str());
          jpeg_destroy_decompress(&dinfo);
          return false;
       }
@@ -57,7 +62,7 @@ namespace img32::priv
 
       int width = dinfo.output_width;
       int height = dinfo.output_height;
-      dstImg->reset(ImageInfo::Make(width, height, colorType())); 
+      dstImg->reset(ImageInfo::Make(width, height, ct)); 
 
       JDIMENSION buffer_height = dinfo.rec_outbuf_height;
       JSAMPARRAY buffer = new JSAMPROW[buffer_height];
@@ -76,14 +81,14 @@ namespace img32::priv
             return false;
          }
       }
-
+      Timer timer;
       while(dinfo.output_scanline < dinfo.output_height) {
          jpeg_read_scanlines(&dinfo, buffer, buffer_height);
          uint8_t* src_address;
          address_t dst_address;
 
          src_address = ((uint8_t**)buffer)[0];
-         color_t r, g, b;
+         channel_t r, g, b;
 
          for (int x=0; x<dstImg->width(); x++) {
             dst_address = dstImg->writable_addr32(x, dinfo.output_scanline-1);
@@ -98,7 +103,7 @@ namespace img32::priv
                b = grayscale;
             }
             
-            SetPixelsIntoAddress(dst_address, dstImg->colorType(), r, g, b, 255);
+            set_pixels_into_address(dst_address, dstImg->colorType(), r, g, b, 255);
          }
       }
       
@@ -108,6 +113,88 @@ namespace img32::priv
 
       jpeg_finish_decompress(&dinfo);
       jpeg_destroy_decompress(&dinfo);
+      return true;
+   }
+
+   bool ImageIOPriv::jpg_encode(const Image& srcImg, const EncoderOptions& options)
+   {
+      printf("%s\n", filename());
+      FileHandle file = open_file(filename(), "wb");
+      jpeg_compress_struct cinfo;
+      error_mgr err;
+      JSAMPARRAY buffer;
+      JDIMENSION buffer_height;
+
+      err.io = this;
+      cinfo.err = jpeg_std_error(&err.jerr);
+      err.jerr.error_exit = jpg_error_exit;
+
+      jpeg_create_compress(&cinfo);
+      jpeg_stdio_dest(&cinfo, file.get());
+
+      cinfo.image_width = srcImg.width();
+      cinfo.image_height = srcImg.height();
+      
+      if(options.colortype == EncoderOptions::GRAYSCALE_ColorType) {
+         cinfo.input_components = 1;
+         cinfo.in_color_space = JCS_GRAYSCALE;
+      }else {
+         cinfo.input_components = 3;
+         cinfo.in_color_space = JCS_RGB;
+      }
+
+      jpeg_set_defaults(&cinfo);
+      jpeg_set_quality(&cinfo, options.jpg_quality, true);
+      cinfo.dct_method = JDCT_ISLOW;
+      cinfo.smoothing_factor = 0;
+
+      jpeg_start_compress(&cinfo, true);
+
+      buffer_height = 1;
+      buffer = new JSAMPROW[buffer_height];
+      if(!buffer) {
+         jpeg_destroy_compress(&cinfo);
+         return false;
+      }
+      
+      for(int c = 0; c < (int)buffer_height; c++) {
+         buffer[c] = new JSAMPLE[cinfo.image_width * cinfo.num_components];
+         if(!buffer[c]) {
+            for(c--; c >= 0; c--)
+               delete[] buffer[c];
+            delete[] buffer;
+            jpeg_destroy_compress(&cinfo);
+            return false;
+         }
+      }
+
+      while(cinfo.next_scanline < cinfo.image_height) {
+         uint8_t* dst_address = ((uint8_t**)buffer)[0];
+         const_address_t src_address;
+
+         for(int x = 0; x < (int)srcImg.width(); x++) {
+            src_address = srcImg.writable_addr32(x, cinfo.next_scanline);
+            color_t c = *src_address;
+
+            if(getA(c) < 255) {
+               c = combine_to_solid_color(c, options.jpg_background);               
+            }
+
+            if(options.colortype == EncoderOptions::RGBA_ColorType) {
+               *(dst_address++) = getR(c);
+               *(dst_address++) = getG(c);
+               *(dst_address++) = getB(c);
+            }else {
+               *(dst_address++) = c;
+            }
+         }
+         jpeg_write_scanlines(&cinfo, buffer, buffer_height);
+      }
+
+      delete[] buffer;
+      jpeg_finish_compress(&cinfo);
+      jpeg_destroy_compress(&cinfo);
+
       return true;
    }
 } // namespace img32::priv
