@@ -11,9 +11,15 @@
    #define IMG32_API
 #endif
 
+#include <cstdint>
+
 namespace img32
 {
    typedef const char* const_charp;
+   typedef uint8_t channel_t;
+   typedef uint32_t color_t;
+   typedef color_t* address_t;
+   typedef const color_t* const_address_t;
 } // namespace img32
 
 

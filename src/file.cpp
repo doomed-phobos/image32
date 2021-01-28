@@ -4,6 +4,8 @@
 
 #ifdef _WIN32
    #include <windows.h>
+#else
+   #define ARRAYSIZE(buf) sizeof(buf) / sizeof(buf[0])
 #endif
 
 #include <cstdio>
@@ -12,9 +14,6 @@
 #define JPG_MAGIC_NUMBER 0xD8FF
 #define PNG_MAGIC_NUMBER1 0x474E5089
 #define PNG_MAGIC_NUMBER2 0x0A1A0A0D
-#ifndef _WIN32
-#define ARRAYSIZE(buf) sizeof(buf) / sizeof(buf[0])
-#endif
 
 FileHandle open_file(std::string filename, std::string mode)
 {
@@ -23,6 +22,22 @@ FileHandle open_file(std::string filename, std::string mode)
 #else
    return FileHandle(fopen(filename.c_str(), mode.c_str()));
 #endif
+}
+
+std::string get_extension_from_file(const std::string& filename)
+{
+   std::string::const_reverse_iterator rit;
+   std::string result;
+
+   for(rit = filename.rbegin(); rit != filename.rend(); ++rit) {
+      if(*rit == '.') break;
+      if(*rit == '\\') return std::string();
+   }
+
+   if(rit != filename.rend())
+      std::copy(std::string::const_iterator(rit.base()), filename.end(), std::back_inserter(result));
+
+   return result;
 }
 
 void offset(FILE* file, long offset)
@@ -84,17 +99,29 @@ namespace big_endian
 
 namespace img32
 {
-   ImageFormat get_image_format(const std::string& filename)
+   ImageFormat get_image_format_by_extension(const std::string& filename)
    {
-         FILE* file = fopen(filename.c_str(), "rb");
-         uint8_t buf[8];
-         
-         fread(buf, 1, ARRAYSIZE(buf), file);
+      std::string ext = string_to_lower(get_extension_from_file(filename));
 
-         return get_image_format(buf);
+      if(ext == "jpg" || ext == "jpeg") return ImageFormat::JPEG;
+      if(ext == "png") return ImageFormat::PNG;
+      if(ext == "bmp") return ImageFormat::BMP;
+
+      return ImageFormat::UNKNOWN;
    }
 
-   ImageFormat get_image_format(const uint8_t buf[8])
+   ImageFormat get_image_format_by_content(const std::string& filename)
+   {
+      FileHandle file;
+      if(file = open_file(filename, "rb"); !file) return ImageFormat::UNKNOWN;
+      uint8_t buf[8];
+      
+      fread(buf, 1, ARRAYSIZE(buf), file.get());
+
+      return get_image_format_by_content(buf);
+   }
+
+   ImageFormat get_image_format_by_content(const uint8_t buf[8])
    {
       #define IS_MAGIC_WORD(offset, word)          \
          (buf[0+offset] == (word & 0xff) &&        \

@@ -10,5 +10,5 @@
 #include "image.h"
 #include "color.h"
 #include "io.h"
-
+//TODO: Añadir la lectura de imagenes PNG INDEXED (o PALETTE)
 #endif

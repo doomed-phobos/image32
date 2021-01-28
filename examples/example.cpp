@@ -4,11 +4,13 @@
 #include <stdexcept>
 #include <windows.h>
 
+#pragma comment(lib, "Msimg32.lib")
+
 //TODO: El formato de Windows es BGRA
 
 HWND g_window;
 constexpr const char g_lpClassName[] = "Window";
-img32::Image image;
+img32::Image image(img32::ImageInfo::Make(9, 6, img32::BGRA_8888));
 
 LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
@@ -21,10 +23,11 @@ public:
 };
 
 IOErrorDelegate errDelegate;
-
+//FIXME: QUITAR LOS TYPEDEFs DE COLORES
 //int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nShowCmd)
 int main()
 {
+   image.loadFromFilename("C:\\Users\\Usuario\\Desktop\\423beaf5a703c357b4d724a0cb692686-dibujos-animados-de-fuego-by-vexels.png", img32::BGRA_8888);
    HINSTANCE hInstance = GetModuleHandle(nullptr);
    WNDCLASSEX wcex = {0};
    wcex.cbSize = sizeof(WNDCLASSEX);
@@ -69,19 +72,18 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
       PAINTSTRUCT ps;
       HDC hDC = BeginPaint(hWnd, &ps);
       
-      if(image.width() > 0 && image.height() > 0) {
-         BITMAPINFO bi = {0};
-         bi.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
-         bi.bmiHeader.biPlanes = 1;
-         bi.bmiHeader.biWidth = image.width();
-         bi.bmiHeader.biHeight = -image.height();
-         bi.bmiHeader.biBitCount = 32;
-         bi.bmiHeader.biCompression = BI_RGB;
-
-         StretchDIBits(hDC,
-         0, 0, image.width(), image.height(), 
-         0, 0, image.width(), image.height(), image.getPixels(), &bi, DIB_RGB_COLORS, SRCCOPY);
-      }
+      BITMAPINFO bi = {0};
+      bi.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
+      bi.bmiHeader.biPlanes = 1;
+      bi.bmiHeader.biWidth = image.width();
+      bi.bmiHeader.biHeight = -image.height();
+      bi.bmiHeader.biBitCount = 32;
+      bi.bmiHeader.biCompression = BI_RGB;
+      
+      HDC hOldDC = CreateCompatibleDC(hDC);
+      void* pixels = image.getPixels();
+      HBITMAP hBitmap = CreateDIBSection(hOldDC, &bi, DIB_RGB_COLORS, &pixels, NULL, 0x00);
+      SelectObject(hOldDC, hBitmap);
 
       EndPaint(hWnd, &ps);
    }
@@ -95,9 +97,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
             if (length > 0) {
                std::vector<TCHAR> str(length+1);
                DragQueryFile(hdrop, index, &str[0], str.size());
-               img32::ImageIO io(&str[0], img32::BGRA_8888);
+               img32::ImageIO io(&str[0]);
                io.setErrorDelegate(&errDelegate);
-               io.decode(&image);
+               io.decode(&image, img32::BGRA_8888);
                //image.loadFromFilename(&str[0], img32::BGRA_8888);
                printf("Width: %d\n"
                       "Height: %d\n", image.width(), image.height());

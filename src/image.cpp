@@ -14,11 +14,6 @@ namespace img32
       m_pixels.resize(m_requiredSize);
    }
 
-   void Image::setPixels(address_t pixels)
-   {
-      std::move(pixels, pixels + m_requiredSize, m_pixels.begin());
-   }
-
    const_address_t Image::addr32() const
    {
       assert(m_info.getBytesPerPixel() == 4);
@@ -37,10 +32,15 @@ namespace img32
       return const_cast<address_t>(addr32(x, y));
    }
 
+   bool Image::isValid() const
+   {
+      return width() > 0 && height() > 0;
+   }
+
    bool Image::loadFromFilename(const char filename[], ColorType ct)
    {
-      ImageIO io(filename, ct);
-      return io.decode(this);
+      ImageIO io(filename);
+      return io.decode(this, ct);
    }
 
    void Image::reset(const ImageInfo& info)

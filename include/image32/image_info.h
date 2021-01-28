@@ -1,12 +1,22 @@
 #ifndef IMAGE_INFO_H
 #define IMAGE_INFO_H
 #include "config.h"
-#include "color_type.h"
 
 #include <cctype> 
 
 namespace img32
 {
+   /// El modo de encodificacion/decodificacion de un pixel
+   ///
+   /// Por defecto se usa RGBA_8888
+   enum ColorType
+   {
+      ARGB_8888, //Pixel con 8 bits para A, R, G, B; dentro de un uint32
+      RGBA_8888, //Pixel con 8 bits para R, G, B, A; dentro de un uint32
+      RGB_888x,  //Pixel con 8 bits para R, G, B; dentro de un uint32
+      BGRA_8888, //Pixel con 8 bits para B, G, R, A; dentro de un uint32
+   };
+
    /// Clase que crea informacion de una imagen a partir de su ancho, alto y tipo de color
    class IMG32_API ImageInfo
    {

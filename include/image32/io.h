@@ -1,7 +1,8 @@
 #ifndef IO_H
 #define IO_H
 #include "image.h"
-
+#include "encoder_options.h"
+//TODO: Crear el algoritmo de "alpha blending"
 namespace img32
 { 
    namespace priv {class ImageIOPriv;}
@@ -16,11 +17,12 @@ namespace img32
    {
    public:
       ImageIO(const_charp filename);
-      ImageIO(const_charp filename, ColorType ct);
+      ~ImageIO();
 
       void setErrorDelegate(IOErrorDelegate* delegate);
 
-      bool decode(Image* dstImg);
+      bool decode(Image* dstImg, ColorType ct = RGBA_8888);
+      bool encode(const Image& srcImg, const EncoderOptions& options);
    private:
       priv::ImageIOPriv* m_impl;
    };

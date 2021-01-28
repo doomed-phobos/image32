@@ -18,6 +18,8 @@ struct FileDeleter
 typedef std::unique_ptr<FILE, FileDeleter> FileHandle;
 
 FileHandle open_file(std::string filename, std::string mode);
+std::string get_extension_from_file(const std::string& filename);
+
 void offset(FILE* file, long offset);
 uint8_t read8(FILE* file);
 
@@ -35,8 +37,9 @@ namespace big_endian
 
 namespace img32
 {
-   ImageFormat get_image_format(const std::string& filename);
-   ImageFormat get_image_format(const uint8_t buf[8]);
+   ImageFormat get_image_format_by_extension(const std::string& filename);
+   ImageFormat get_image_format_by_content(const std::string& filename);
+   ImageFormat get_image_format_by_content(const uint8_t buf[8]);
 } // namespace img32
 
 

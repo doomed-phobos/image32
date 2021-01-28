@@ -9,25 +9,34 @@ namespace img32::priv
    {
    public:
       ImageIOPriv(const_charp filename) :
-      ImageIOPriv(filename, RGBA_8888) {}
-      
-      ImageIOPriv(const_charp filename, ColorType ct) :
       m_filename(filename),
-      m_colorType(ct),
       m_delegate(nullptr) {}
 
       void setErrorDelegate(IOErrorDelegate* delegate) {m_delegate = delegate;}
 
-      bool decode(Image* dstImg) {
-         switch(get_image_format(m_filename)) {
+      bool decode(Image* dstImg, ColorType ct) {
+         switch(get_image_format_by_content(m_filename)) {
          case ImageFormat::JPEG:
-            return jpg_decode(dstImg);
+            return jpg_decode(dstImg, ct);
             break;
          case ImageFormat::BMP:
-            return bmp_decode(dstImg);
+            return bmp_decode(dstImg, ct);
             break;
          case ImageFormat::PNG:
-            return png_decode(dstImg);
+            return png_decode(dstImg, ct);
+            break;
+         }
+         
+         return false;
+      }
+
+      bool encode(const Image& srcImg, const EncoderOptions& options) {
+         switch(get_image_format_by_extension(m_filename)) {
+         case ImageFormat::JPEG:
+            return jpg_encode(srcImg, options);
+            break;
+         case ImageFormat::PNG:
+            return png_encode(srcImg, options);
             break;
          }
          
@@ -40,15 +49,16 @@ namespace img32::priv
       }
 
       const_charp filename() const {return m_filename;}
-      ColorType colorType() const {return m_colorType;}
    private:
-      bool png_decode(Image* dstImg);
-      bool bmp_decode(Image* dstImg);
-      bool jpg_decode(Image* dstImg);
+      bool jpg_encode(const Image& srcImg, const EncoderOptions& options);
+      bool png_encode(const Image& srcImg, const EncoderOptions& options);
+
+      bool png_decode(Image* dstImg, ColorType ct);
+      bool bmp_decode(Image* dstImg, ColorType ct);
+      bool jpg_decode(Image* dstImg, ColorType ct);
 
       IOErrorDelegate* m_delegate;
       const_charp m_filename;
-      ColorType m_colorType;
    };
 } // namespace img32::priv
 

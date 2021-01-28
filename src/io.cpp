@@ -6,21 +6,22 @@
 namespace img32
 {
    ImageIO::ImageIO(const_charp filename) :
-   ImageIO(filename, RGBA_8888)
-   {}
+   m_impl(new priv::ImageIOPriv(filename)) {}
 
-   ImageIO::ImageIO(const_charp filename, ColorType ct) :
-   m_impl(new priv::ImageIOPriv(filename, ct))
-   {}
+   ImageIO::~ImageIO() {delete m_impl;}
 
    void ImageIO::setErrorDelegate(IOErrorDelegate* delegate)
    {
       m_impl->setErrorDelegate(delegate);
    }
 
-   bool ImageIO::decode(Image* dstImg)
+   bool ImageIO::decode(Image* dstImg, ColorType ct)
    {
-	   Timer time;
-      return m_impl->decode(dstImg);
+      return m_impl->decode(dstImg, ct);
+   }
+
+   bool ImageIO::encode(const Image& srcImg, const EncoderOptions& options)
+   {
+      return m_impl->encode(srcImg, options);
    }
 } // namespace img32

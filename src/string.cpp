@@ -4,6 +4,16 @@
 #include <vector>
 #include <windows.h>
 
+std::string string_to_lower(const std::string& str)
+{
+   std::string result(str);
+
+   for(auto it = result.begin(); it != result.end(); it++)
+      *it = std::tolower(*it);
+
+   return result;
+}
+
 std::string format_to_string(const char* format, ...)
 {
    va_list args;
@@ -21,7 +31,7 @@ std::string format_to_string(const char* format, ...)
 std::string to_utf8(const std::wstring& wstr)
 {
    if(wstr == L"") return std::string();
-
+   
    int required_size = ::WideCharToMultiByte(CP_UTF8,
    0, wstr.c_str(), wstr.size(), NULL, 0, 0, 0);
 
