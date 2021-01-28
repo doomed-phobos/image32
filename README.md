@@ -12,3 +12,4 @@ Use ```img32::rgba``` to create a color from the R, G, B, A channels
 -  Simple reading of image files (only with one function) at different types of color **(RGB, ARGB, BGRA)**.
 -  You can change the pixels of the **Image** class.
 -  Individual modification of pixels.
+-  Alpha blending (hacer que un color con alpha se combine con un fondo, sirve para exportar alpha a formatos que no permiten el alpha)
