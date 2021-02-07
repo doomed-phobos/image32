@@ -17,11 +17,18 @@ namespace img32
 
    bool ImageIO::decode(Image* dstImg, ColorType ct)
    {
+      Timer timer;
       return m_impl->decode(dstImg, ct);
    }
 
    bool ImageIO::encode(const Image& srcImg, const EncoderOptions& options)
    {
+      Timer timer;
       return m_impl->encode(srcImg, options);
+   }
+
+   void ImageIO::reset(const_charp filename)
+   {
+      m_impl->reset(filename);
    }
 } // namespace img32
