@@ -4,9 +4,6 @@
 #include "string.h"
 
 #include "png.h"
-//TODO: Error al abrir imagenes con color de modo PALETTE
-
-#define PNG_DEBUG
 
 namespace img32::priv
 {
@@ -72,7 +69,7 @@ namespace img32::priv
          uint8_t* src_address = rows_pointer[y];
          channel_t r, g, b, a;
          for(uint32_t x = 0; x < width; x++) {
-            address_t dst_address = dstImg->writable_addr32(x, y);
+            uint32_t* dst_address = dstImg->writable_addr32(x, y);
 
             if(png_get_color_type(png, info) == PNG_COLOR_TYPE_RGB_ALPHA) {
                r = *(src_address++);
@@ -90,6 +87,23 @@ namespace img32::priv
                      a = 0;
                }else 
                   a = 255;
+            }else if(png_get_color_type(png, info) == PNG_COLOR_TYPE_GRAY) {
+               uint32_t gray = *(src_address++);
+               r = gray;
+               g = gray;
+               b = gray;
+
+               if(png_transp_color &&
+                  gray == png_transp_color->gray) {
+                     a = 0;
+               }else
+                  a = 255;
+            }else if(png_get_color_type(png, info) == PNG_COLOR_TYPE_GRAY_ALPHA) {
+               uint32_t gray = *(src_address++);
+               r = gray;
+               g = gray;
+               b = gray;
+               a = *(src_address++);
             }
 
             set_pixels_into_address(dst_address, dstImg->colorType(), r, g, b, a);
@@ -104,11 +118,71 @@ namespace img32::priv
 
    bool ImageIOPriv::png_encode(const Image& srcImg, const EncoderOptions& options)
    {
-      FileHandle file = open_file(filename(), "wb");
+      FileHandle hFile = open_file(filename(), "wb");
+      FILE* file = hFile.get();
       png_structp png;
       png_infop info;
+      png_bytep row_pointer;
+      int color_type = 0;
 
-      if(!(png = png_create_write_struct(PNG_LIBPNG_VER_STRING, (png_voidp)this, png_show_error, png_show_error))) return false;
+      png = png_create_write_struct(PNG_LIBPNG_VER_STRING, (png_voidp)this, png_show_error, png_show_error);
+      if(!png) return false;
+
+      info = png_create_info_struct(png);
+      if(!info) {
+         png_destroy_write_struct(&png, nullptr);
+         return false;
+      }
+
+      if(setjmp(png_jmpbuf(png))) {
+         png_destroy_write_struct(&png, &info);
+         return false;
+      }
+
+      png_init_io(png, file);
+      
+      switch(options.colortype) {
+      case EncoderOptions::RGB_ColorType:             color_type = PNG_COLOR_TYPE_RGB;        break;
+      case EncoderOptions::RGBA_ColorType:            color_type = PNG_COLOR_TYPE_RGBA;       break;
+      case EncoderOptions::Grayscale_ColorType:       color_type = PNG_COLOR_TYPE_GRAY;       break;
+      case EncoderOptions::GrayscaleA_ColorType:      color_type = PNG_COLOR_TYPE_GRAY_ALPHA; break;
+      }
+
+      png_set_IHDR(png, info, srcImg.width(), srcImg.height(), 8,
+         color_type, PNG_INTERLACE_NONE, PNG_COMPRESSION_TYPE_BASE,
+         PNG_FILTER_TYPE_BASE);
+
+      png_write_info(png, info);
+      png_set_packing(png);
+
+      row_pointer = (png_bytep)png_malloc(png, png_get_rowbytes(png, info));
+      for(png_uint_32 y = 0; y < srcImg.height(); y++) {
+         uint8_t* dst_address = row_pointer;
+         for(png_uint_32 x = 0; x < srcImg.width(); x++) {
+            color_t c = srcImg.getPixel(x, y);
+
+            if(png_get_color_type(png, info) == PNG_COLOR_TYPE_RGBA) {
+               *(dst_address++) = getR(c);
+               *(dst_address++) = getG(c);
+               *(dst_address++) = getB(c);
+               *(dst_address++) = getA(c);
+            }else if(png_get_color_type(png, info) == PNG_COLOR_TYPE_RGB) {
+               *(dst_address++) = getR(c);
+               *(dst_address++) = getG(c);
+               *(dst_address++) = getB(c);
+            }else if(png_get_color_type(png, info) == PNG_COLOR_TYPE_GRAY) {
+               *(dst_address++) = (options.fix_grayscale ? rgba_to_gray(c) : c);
+            }else if(png_get_color_type(png, info) == PNG_COLOR_TYPE_GRAY_ALPHA) {
+               *(dst_address++) = (options.fix_grayscale ? rgba_to_gray(c) : c);
+               *(dst_address++) = getA(c);
+            }
+         }
+
+         png_write_rows(png, &row_pointer, 1);
+      }
+
+      png_write_end(png, info);
+      png_free(png, row_pointer);
 
       return true;
    }
