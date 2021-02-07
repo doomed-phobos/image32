@@ -4,8 +4,10 @@
 
 #ifdef _WIN32
    #include <windows.h>
+   static constexpr char g_path_separator = '\\';
 #else
    #define ARRAYSIZE(buf) sizeof(buf) / sizeof(buf[0])
+   static constexpr char g_path_separator = '/';
 #endif
 
 #include <cstdio>
@@ -31,7 +33,7 @@ std::string get_extension_from_file(const std::string& filename)
 
    for(rit = filename.rbegin(); rit != filename.rend(); ++rit) {
       if(*rit == '.') break;
-      if(*rit == '\\') return std::string();
+      if(*rit == g_path_separator) return std::string();
    }
 
    if(rit != filename.rend())
@@ -72,30 +74,35 @@ namespace little_endian
               (b2 << 8)  |
                b1);
    }
+
+   bool write16(FILE* file, uint16_t word)
+   {
+      uint8_t b2 = (word >> 8) & 0xff;
+      uint8_t b1 = word & 0xff;
+
+      if(fputc(b1, file) == b1)
+         if(fputc(b2, file) == b2)
+            return true;
+      
+      return false;
+   }
+
+   bool write32(FILE* file, uint32_t dword)
+   {
+      uint8_t b4 = (dword >> 24) & 0xff;
+      uint8_t b3 = (dword >> 16) & 0xff;
+      uint8_t b2 = (dword >> 8)  & 0xff;
+      uint8_t b1 = dword & 0xff;
+
+      if(fputc(b1, file) == b1)
+         if(fputc(b2, file) == b2)
+            if(fputc(b3, file) == b3)
+               if(fputc(b4, file) == b4)
+                  return true;
+      
+      return false;
+   }
 } // namespace little_endian
-
-namespace big_endian
-{
-   uint16_t read16(FILE* file)
-   {
-      uint8_t b2 = read8(file);
-      uint8_t b1 = read8(file);
-
-      return ((b2 << 8) | b1);
-   }
-   uint32_t read32(FILE* file)
-   {
-      uint8_t b4 = read8(file);
-      uint8_t b3 = read8(file);
-      uint8_t b2 = read8(file);
-      uint8_t b1 = read8(file);
-
-      return ((b4 << 24) |
-              (b3 << 16) |
-              (b2 << 8)  |
-               b1);
-   }
-} // namespace big_endian
 
 namespace img32
 {

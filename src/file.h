@@ -27,13 +27,9 @@ namespace little_endian
 {
    uint16_t read16(FILE* file);
    uint32_t read32(FILE* file);
+   bool write16(FILE* file, uint16_t word);
+   bool write32(FILE* file, uint32_t dword);
 } // namespace little_endian
-
-namespace big_endian
-{
-   uint16_t read16(FILE* file);
-   uint32_t read32(FILE* file);
-} // namespace big_endian
 
 namespace img32
 {
