@@ -9,9 +9,6 @@ set(INCLDIR ${PROJECT_SOURCE_DIR}/include)
 
 if(WIN32)
    list(APPEND IMG32_DEFINITIONS -DIMG32_WIN)
-   if(MSVC)
-      list(APPEND IMG32_DEFINITIONS -D_CRT_SECURE_NO_WARNINGS)
-   endif()
 endif()
 
 set(IMG32_SOURCES
@@ -19,6 +16,7 @@ set(IMG32_SOURCES
    image_priv.h
    image.cpp
    image_info.cpp
+   image_buffer.cpp
    io.cpp
    io_jpeg.cpp
    io_png.cpp

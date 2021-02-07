@@ -2,8 +2,6 @@
 #define IMAGE_INFO_H
 #include "config.h"
 
-#include <cctype> 
-
 namespace img32
 {
    /// El modo de encodificacion/decodificacion de un pixel
@@ -18,7 +16,7 @@ namespace img32
    };
 
    /// Clase que crea informacion de una imagen a partir de su ancho, alto y tipo de color
-   class IMG32_API ImageInfo
+   class IMG32_DLL ImageInfo
    {
    public:
       ImageInfo();
