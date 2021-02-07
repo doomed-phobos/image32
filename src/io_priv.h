@@ -38,6 +38,9 @@ namespace img32::priv
          case ImageFormat::PNG:
             return png_encode(srcImg, options);
             break;
+         case ImageFormat::BMP:
+            return bmp_encode(srcImg, options);
+            break;
          }
          
          return false;
@@ -49,9 +52,14 @@ namespace img32::priv
       }
 
       const_charp filename() const {return m_filename;}
+   
+      void reset(const_charp filename) {
+         m_filename = filename;
+      }
    private:
       bool jpg_encode(const Image& srcImg, const EncoderOptions& options);
       bool png_encode(const Image& srcImg, const EncoderOptions& options);
+      bool bmp_encode(const Image& srcImg, const EncoderOptions& options);
 
       bool png_decode(Image* dstImg, ColorType ct);
       bool bmp_decode(Image* dstImg, ColorType ct);
