@@ -2,7 +2,10 @@
 
 #include <cstdarg>
 #include <vector>
-#include <windows.h>
+
+#ifdef _WIN32
+   #include <windows.h>
+#endif
 
 std::string string_to_lower(const std::string& str)
 {
@@ -28,30 +31,34 @@ std::string format_to_string(const char* format, ...)
    return std::string(&buf[0]);
 }
 
-std::string to_utf8(const std::wstring& wstr)
-{
-   if(wstr == L"") return std::string();
-   
-   int required_size = ::WideCharToMultiByte(CP_UTF8,
-   0, wstr.c_str(), wstr.size(), NULL, 0, 0, 0);
+#ifdef _WIN32
+   std::string to_utf8(const std::wstring& wstr)
+   {
+      if(wstr == L"") return std::string();
+      
+      int required_size = ::WideCharToMultiByte(CP_UTF8,
+      0, wstr.c_str(), wstr.size(), NULL, 0, 0, 0);
 
-   std::vector<char> str(++required_size);
-   ::WideCharToMultiByte(CP_UTF8, 0, wstr.c_str(), wstr.size(),
-   &str[0], str.size(), 0, 0);
+      std::vector<char> str(++required_size);
+      ::WideCharToMultiByte(CP_UTF8, 0, wstr.c_str(), wstr.size(),
+      &str[0], str.size(), 0, 0);
 
-   return std::string(&str[0]);
-}
+      return std::string(&str[0]);
+   }
 
-std::wstring from_utf8(const std::string& str)
-{
-   if(str == "") return std::wstring(L"");
+   std::wstring from_utf8(const std::string& str)
+   {
+      if(str == "") return std::wstring(L"");
 
-   int required_size = ::MultiByteToWideChar(CP_UTF8, 0,
-   str.c_str(), str.size(), NULL, 0);
+      int required_size = ::MultiByteToWideChar(CP_UTF8, 0,
+      str.c_str(), str.size(), NULL, 0);
 
-   std::vector<wchar_t> wstr(++required_size);
-   ::MultiByteToWideChar(CP_UTF8, 0,
-   str.c_str(), str.size(), &wstr[0], wstr.size());
+      std::vector<wchar_t> wstr(++required_size);
+      ::MultiByteToWideChar(CP_UTF8, 0,
+      str.c_str(), str.size(), &wstr[0], wstr.size());
 
-   return std::wstring(&wstr[0]);
-}
+      return std::wstring(&wstr[0]);
+   }
+#else
+   #error "Proximamente será añadido from_utf8 y to_utf8 para otras plataformas"
+#endif
