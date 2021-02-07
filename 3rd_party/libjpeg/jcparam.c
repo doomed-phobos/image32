@@ -363,7 +363,7 @@ jpeg_default_colorspace (j_compress_ptr cinfo)
     jpeg_set_colorspace(cinfo, JCS_GRAYSCALE);
     break;
   case JCS_RGB:
-    jpeg_set_colorspace(cinfo, JCS_YCbCr);
+    jpeg_set_colorspace(cinfo, JCS_RGB); //FIXED: The code of the JCS_RGB label contains a typo. The developer should have passed the value JCS_RGB, not JCS_YCbCr.
     break;
   case JCS_YCbCr:
     jpeg_set_colorspace(cinfo, JCS_YCbCr);
