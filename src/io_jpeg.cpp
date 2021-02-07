@@ -81,7 +81,7 @@ namespace img32::priv
             return false;
          }
       }
-      Timer timer;
+      
       while(dinfo.output_scanline < dinfo.output_height) {
          jpeg_read_scanlines(&dinfo, buffer, buffer_height);
          uint8_t* src_address;
@@ -118,7 +118,6 @@ namespace img32::priv
 
    bool ImageIOPriv::jpg_encode(const Image& srcImg, const EncoderOptions& options)
    {
-      printf("%s\n", filename());
       FileHandle file = open_file(filename(), "wb");
       jpeg_compress_struct cinfo;
       error_mgr err;
@@ -134,8 +133,9 @@ namespace img32::priv
 
       cinfo.image_width = srcImg.width();
       cinfo.image_height = srcImg.height();
+
       
-      if(options.colortype == EncoderOptions::GRAYSCALE_ColorType) {
+      if((options.colortype & ~EncoderOptions::Alpha_BitMask) == EncoderOptions::Grayscale_ColorType) {
          cinfo.input_components = 1;
          cinfo.in_color_space = JCS_GRAYSCALE;
       }else {
@@ -144,9 +144,7 @@ namespace img32::priv
       }
 
       jpeg_set_defaults(&cinfo);
-      jpeg_set_quality(&cinfo, options.jpg_quality, true);
-      cinfo.dct_method = JDCT_ISLOW;
-      cinfo.smoothing_factor = 0;
+      jpeg_set_quality(&cinfo, 100, FALSE);
 
       jpeg_start_compress(&cinfo, true);
 
@@ -173,19 +171,21 @@ namespace img32::priv
          const_address_t src_address;
 
          for(int x = 0; x < (int)srcImg.width(); x++) {
-            src_address = srcImg.writable_addr32(x, cinfo.next_scanline);
-            color_t c = *src_address;
+            color_t c = srcImg.getPixel(x, cinfo.next_scanline);
 
-            if(getA(c) < 255) {
-               c = combine_to_solid_color(c, options.jpg_background);               
-            }
+            if(options.colortype & EncoderOptions::Alpha_BitMask) {
+               if(getA(c) < 255)
+                  c = combine_to_solid_color(c, options.jpg_background);
+            }else
+               if(getA(c) < 255)
+                  c = options.jpg_background;              
 
-            if(options.colortype == EncoderOptions::RGBA_ColorType) {
+            if((options.colortype & ~EncoderOptions::Alpha_BitMask) == EncoderOptions::RGB_ColorType) {
                *(dst_address++) = getR(c);
                *(dst_address++) = getG(c);
                *(dst_address++) = getB(c);
             }else {
-               *(dst_address++) = c;
+               *(dst_address++) = (options.fix_grayscale ? rgba_to_gray(c) : c);
             }
          }
          jpeg_write_scanlines(&cinfo, buffer, buffer_height);
