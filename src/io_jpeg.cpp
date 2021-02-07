@@ -144,7 +144,7 @@ namespace img32::priv
       }
 
       jpeg_set_defaults(&cinfo);
-      jpeg_set_quality(&cinfo, 100, FALSE);
+      jpeg_set_quality(&cinfo, options.jpg_quality, TRUE);
 
       jpeg_start_compress(&cinfo, true);
 
