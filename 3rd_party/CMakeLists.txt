@@ -4,7 +4,9 @@
 # Used this library under the terms of MIT license
 # Read LICENSE for more information
 
-add_definitions(-D_CRT_SECURE_NO_WARNINGS)
+if(MSVC)
+   add_definitions(-D_CRT_SECURE_NO_WARNINGS)
+endif()
 
 set(SKIP_INSTALL_ALL ON)
 

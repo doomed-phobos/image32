@@ -4,15 +4,12 @@
 #include <stdexcept>
 #include <windows.h>
 
-#pragma comment(lib, "Msimg32.lib")
-
 //TODO: El formato de Windows es BGRA
 
-HWND g_window;
 constexpr const char g_lpClassName[] = "Window";
-img32::Image image(img32::ImageInfo::Make(9, 6, img32::BGRA_8888));
-
 LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+img32::Image g_image(img32::ImageInfo(3, 1, img32::RGBA_8888));
+
 
 class IOErrorDelegate : public img32::IOErrorDelegate
 {
@@ -22,12 +19,16 @@ public:
    }
 };
 
-IOErrorDelegate errDelegate;
-//FIXME: QUITAR LOS TYPEDEFs DE COLORES
-//int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nShowCmd)
 int main()
 {
-   image.loadFromFilename("C:\\Users\\Usuario\\Desktop\\423beaf5a703c357b4d724a0cb692686-dibujos-animados-de-fuego-by-vexels.png", img32::BGRA_8888);
+   g_image.loadFromFilename("C:\\Users\\Usuario\\Desktop\\YlzsO.png", img32::ARGB_8888);
+   img32::EncoderOptions eo;
+   eo.colortype = img32::EncoderOptions::RGB_ColorType;
+   eo.jpg_quality = 5;
+   eo.jpg_background = img32::rgba(255, 0, 0);
+   eo.fix_grayscale = false;
+   g_image.saveToFilename("C:\\Users\\Usuario\\Desktop\\example.jpg", eo);
+
    HINSTANCE hInstance = GetModuleHandle(nullptr);
    WNDCLASSEX wcex = {0};
    wcex.cbSize = sizeof(WNDCLASSEX);
@@ -38,7 +39,7 @@ int main()
    wcex.style = CS_HREDRAW | CS_VREDRAW;
    if(!RegisterClassEx(&wcex)) throw std::runtime_error("Error al registar una clase!");
    
-   g_window = CreateWindowEx(
+   HWND window = CreateWindowEx(
       WS_EX_APPWINDOW | WS_EX_ACCEPTFILES,
       g_lpClassName,
       "Image Viewer",
@@ -50,10 +51,10 @@ int main()
       hInstance,
       nullptr
    );
-   if(!g_window) throw std::runtime_error("Error al crear una ventana!");
+   if(!window) throw std::runtime_error("Error al crear una ventana!");
 
-   ShowWindow(g_window, SW_SHOW);
-   UpdateWindow(g_window);
+   ShowWindow(window, SW_SHOW);
+   UpdateWindow(window);
 
    MSG msg;
    while(GetMessage(&msg, nullptr, 0, 0) > 0) {
@@ -66,7 +67,7 @@ int main()
 
 LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
-// Add a reader image
+
    switch(msg) {
    case WM_PAINT: {
       PAINTSTRUCT ps;
@@ -75,16 +76,15 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
       BITMAPINFO bi = {0};
       bi.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
       bi.bmiHeader.biPlanes = 1;
-      bi.bmiHeader.biWidth = image.width();
-      bi.bmiHeader.biHeight = -image.height();
+      bi.bmiHeader.biWidth = g_image.width();
+      bi.bmiHeader.biHeight = -g_image.height();
       bi.bmiHeader.biBitCount = 32;
       bi.bmiHeader.biCompression = BI_RGB;
-      
-      HDC hOldDC = CreateCompatibleDC(hDC);
-      void* pixels = image.getPixels();
-      HBITMAP hBitmap = CreateDIBSection(hOldDC, &bi, DIB_RGB_COLORS, &pixels, NULL, 0x00);
-      SelectObject(hOldDC, hBitmap);
 
+      StretchDIBits(hDC, 0, 0, g_image.width(), g_image.height(),
+         0, 0, g_image.width(), g_image.height(),
+         g_image.getPixels(), &bi, DIB_RGB_COLORS, SRCCOPY);
+      
       EndPaint(hWnd, &ps);
    }
       break;
@@ -97,12 +97,11 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
             if (length > 0) {
                std::vector<TCHAR> str(length+1);
                DragQueryFile(hdrop, index, &str[0], str.size());
-               img32::ImageIO io(&str[0]);
-               io.setErrorDelegate(&errDelegate);
-               io.decode(&image, img32::BGRA_8888);
-               //image.loadFromFilename(&str[0], img32::BGRA_8888);
-               printf("Width: %d\n"
-                      "Height: %d\n", image.width(), image.height());
+               //img32::ImageIO io(&str[0]);
+               //io.setErrorDelegate(&errDelegate);
+               //io.decode(&image, img32::BGRA_8888);
+               g_image.loadFromFilename(&str[0], img32::BGRA_8888);
+
                InvalidateRect(hWnd, nullptr, TRUE);
             }
       }
