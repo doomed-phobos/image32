@@ -26,16 +26,21 @@ namespace img32
       const void* getPixels() const;
       void* getPixels();
       void setPixels(uint8_t* pixels);
-
+      
+      const uint8_t* addr8() const;
       const_address_t addr32() const;
+
+      const uint8_t* addr8(int x, int y) const;
       const_address_t addr32(int x, int y) const;
+      
+      uint8_t* writable_addr8(int x, int y) const;
       address_t writable_addr32(int x, int y) const;
 
       void fill(color_t c);
       void putPixel(int x, int y, color_t c);
       color_t getPixel(int x, int y) const;
 
-      size_t rowBytes() const {return m_info.minRowBytes();}
+      size_t rowBytes() const {return m_info.getRowStrideBytes();}
       int width() const {return m_info.width();}
       int height() const {return m_info.height();}
       ColorType colorType() const {return m_info.colorType();}
@@ -56,7 +61,7 @@ namespace img32
    private:
       size_t m_totalSize;
       ImageInfo m_info;
-      ImageBuffer m_buffer;
+      mutable ImageBuffer m_buffer;
    };
 } // namespace img32
 

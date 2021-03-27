@@ -5,7 +5,7 @@
 
 #include <cstring>
 #include <csetjmp>
-//TODO: Crear el codificador de imagenes BMP
+//TODO: Crear el io de imagenes BMP Grayscale
 #define BMP_FIELD 0x4D42
 
 #define BMP_INFO_HEADER_SIZE 40
@@ -66,9 +66,14 @@ namespace img32::priv
 
       bmp->infile = file;
    }
-
+// TODO: Cambiar la forma de lectura
+// En vez de que cuando esté leyendo las imagenes verifique el tipo de color,
+// crear la funcion makeColorType en Image class que cambiará el buffer de pixeles
+// TODO: Cambiar ImageIO a ImageCodec
+// TODO: Crear un enum Result que tendrá difentes tipos de resultado (como Success, Invalid File, etc)
+// TODO: Usar std::unique_ptr para usar memoria
    void read_header_bmp(bmp_struct_ptr bmp)
-   {
+   {//TODO: Decodificar bmp 8 bits
       using namespace little_endian;
       offset(bmp->infile, 10);
       bmp->array_offset = read32(bmp->infile);
@@ -88,7 +93,7 @@ namespace img32::priv
          channel_t b = read8(file);
          channel_t g = read8(file);
          channel_t r = read8(file);
-         address_t dst_address = dstImg->writable_addr32(i, bmp_get_height(bmp)-scanline-1);
+         address_t dst_address = dstImg->writable_addr32(i, scanline);
          set_pixels_into_address(dst_address, dstImg->colorType(), r, g, b, 255);
       }
 
@@ -98,14 +103,41 @@ namespace img32::priv
             read8(file);
    }
 
+   void read_8bit_bmp(Image* dstImg, int scanline, bmp_struct_ptr bmp)
+   {
+      unsigned char b[4];
+      unsigned long n;
+      int i, j, k;
+      int pix;
+
+      for (i=0; i<dstImg->width(); i++) {
+         j = i % 4;
+         if (j == 0) {
+            n = little_endian::read32(bmp->infile);
+            for (k=0; k<4; k++) {
+               b[k] = (char)(n & 255);
+               n = n >> 8;
+            }
+         }
+
+         pix = b[j];
+         dstImg->putPixel(i, scanline, pix);
+         //set_pixels_into_address(dstImg->writable_addr32(i, scanline), dstImg->colorType(), getR(pix),)
+      }
+   }
+
    void read_array_bmp(Image* dstImg, bmp_struct_ptr bmp)
    {
       offset(bmp->infile, bmp->array_offset);
+      int line = bmp_get_height(bmp)-1;
 
-      for(uint32_t y = 0; y < bmp->header.height; y++) {
+      for(uint32_t y = 0; y < bmp_get_height(bmp); y++, line -= 1) {
          switch(bmp_get_bitcount(bmp)) {
+         case 8:
+            read_8bit_bmp(dstImg, line, bmp);
+            break;
          case 24:
-            read_24bit_bmp(dstImg, y, bmp);
+            read_24bit_bmp(dstImg, line, bmp);
             break;
          default: BMP_ERROR(bmp, "Unsupported bitcount"); break;
          }

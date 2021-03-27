@@ -34,7 +34,6 @@ namespace img32
 
    const_address_t Image::addr32() const
    {
-      assert(m_info.getBytesPerPixel() == 4);
       return reinterpret_cast<const_address_t>(m_buffer.buffer());
    }
 
@@ -43,6 +42,23 @@ namespace img32
       assert(x < width());
       assert(y < height());
       return (const_address_t)((const char*)addr32() + y*rowBytes() + (x << 2));
+   }
+
+   const uint8_t* Image::addr8() const
+   {
+      return reinterpret_cast<const uint8_t*>(m_buffer.buffer());
+   }
+
+   const uint8_t* Image::addr8(int x, int y) const
+   {
+      assert(x < width());
+      assert(y < height());
+      return (const uint8_t*)((const char*)addr8() + y*rowBytes() + (x << 0));
+   }
+
+   uint8_t* Image::writable_addr8(int x, int y) const
+   {
+      return const_cast<uint8_t*>(addr8(x, y));
    }
 
    address_t Image::writable_addr32(int x, int y) const
