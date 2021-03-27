@@ -15,6 +15,9 @@ set(CMAKE_CXX_STANDARD 17)
 project(image32 CXX C)
 
 option(IMG32_EXAMPLES "Allow building examples?" ON)
+option(IMG32_BUILD_ZLIB "Allow zlib build" ON)
+option(IMG32_BUILD_LIBPNG "Allow libpng build" ON)
+option(IMG32_BUILD_LIBJPEG "Allow libjpeg build" ON)
 
 add_subdirectory(3rd_party)
 add_subdirectory(src)
