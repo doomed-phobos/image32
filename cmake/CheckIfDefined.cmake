@@ -1,0 +1,7 @@
+macro(check_if_defined DEFINITION)
+   if(NOT DEFINED ${DEFINITION})
+      message(FATAL_ERROR "${DEFINITION} - not defined")
+   else()
+      message(STATUS "${DEFINITION} - defined")
+   endif()
+endmacro()
