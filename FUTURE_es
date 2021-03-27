@@ -1,3 +1,5 @@
-Añadir soporte para imagenes ICO, TIFF
+Añadir soporte para imagenes TIFF
 Añadir la posibilidad de escribir imagenes
 [2020/01/13] Añadir la posibilidad de escalar imagenes
+[2021/03/27] Añadir que esta libreria sea un .DLL
+[2021/03/27] Añadir que pueda personalizad la construccion de zlib, libpng, libjpeg
