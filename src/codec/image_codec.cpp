@@ -13,9 +13,7 @@ namespace img32
    ImageCodec::ImageCodec(const ColorType& colorType) :
       m_colorType(colorType),
       m_callback(nullptr)
-   {
-
-   }
+   {}
 
    void ImageCodec::setErrorCallback(CodecErrorCallback callback)
    {

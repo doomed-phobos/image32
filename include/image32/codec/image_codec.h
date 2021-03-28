@@ -14,7 +14,6 @@ namespace img32
       ImageCodec(const ColorType& colorType);
 
       void setErrorCallback(CodecErrorCallback callback);
-      //TODO: Crear los decodificadores a partir de class ImageDecoder
       Result decode(ImageData* imgData, const char* filename);
    private:
       ColorType m_colorType;
