@@ -42,6 +42,7 @@ namespace img32
       bmp_read_info(m_bmp);
 
       bmp_get_info(m_bmp, &width, &height, &color_type, NULL, NULL);
+      printf("ColorType: %d\n", color_type);
 
       if(m_colorType == Unchanged_ColorType) {
          m_colorType = (color_type == BMP_COLOR_TYPE_RGB ? BGRA_8888_ColorType : Indexed_ColorType); 
