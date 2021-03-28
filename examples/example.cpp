@@ -4,31 +4,12 @@
 #include <stdexcept>
 #include <windows.h>
 
-//TODO: El formato de Windows es BGRA
-
 constexpr const char g_lpClassName[] = "Window";
 LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
-img32::Image g_image(img32::ImageInfo(3, 1, img32::RGBA_8888));
-
-
-class IOErrorDelegate : public img32::IOErrorDelegate
-{
-public:
-   virtual void OnError(img32::const_charp msg) override {
-      MessageBox(nullptr, msg, "Error decode", MB_OK);
-   }
-};
+img32::ImageData g_image;
 
 int main()
 {
-   g_image.loadFromFilename("C:\\Users\\Usuario\\Desktop\\YlzsO.png", img32::ARGB_8888);
-   img32::EncoderOptions eo;
-   eo.colortype = img32::EncoderOptions::RGB_ColorType;
-   eo.jpg_quality = 5;
-   eo.jpg_background = img32::rgba(255, 0, 0);
-   eo.fix_grayscale = false;
-   g_image.saveToFilename("C:\\Users\\Usuario\\Desktop\\example.jpg", eo);
-
    HINSTANCE hInstance = GetModuleHandle(nullptr);
    WNDCLASSEX wcex = {0};
    wcex.cbSize = sizeof(WNDCLASSEX);
@@ -67,23 +48,24 @@ int main()
 
 LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
-
    switch(msg) {
    case WM_PAINT: {
       PAINTSTRUCT ps;
       HDC hDC = BeginPaint(hWnd, &ps);
-      
-      BITMAPINFO bi = {0};
-      bi.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
-      bi.bmiHeader.biPlanes = 1;
-      bi.bmiHeader.biWidth = g_image.width();
-      bi.bmiHeader.biHeight = -g_image.height();
-      bi.bmiHeader.biBitCount = 32;
-      bi.bmiHeader.biCompression = BI_RGB;
 
-      StretchDIBits(hDC, 0, 0, g_image.width(), g_image.height(),
-         0, 0, g_image.width(), g_image.height(),
-         g_image.getPixels(), &bi, DIB_RGB_COLORS, SRCCOPY);
+      if(g_image.isValid()) {
+         BITMAPINFO bi = {0};
+         bi.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
+         bi.bmiHeader.biPlanes = 1;
+         bi.bmiHeader.biWidth = g_image.getInfo().width();
+         bi.bmiHeader.biHeight = -g_image.getInfo().height();
+         bi.bmiHeader.biBitCount = 32;
+         bi.bmiHeader.biCompression = BI_RGB;
+
+         StretchDIBits(hDC, 0, 0, g_image.getInfo().width(), g_image.getInfo().height(),
+            0, 0, g_image.getInfo().width(), g_image.getInfo().height(),
+            g_image.getPixels(), &bi, DIB_RGB_COLORS, SRCCOPY);
+      }
       
       EndPaint(hWnd, &ps);
    }
@@ -97,10 +79,14 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
             if (length > 0) {
                std::vector<TCHAR> str(length+1);
                DragQueryFile(hdrop, index, &str[0], str.size());
-               //img32::ImageIO io(&str[0]);
-               //io.setErrorDelegate(&errDelegate);
-               //io.decode(&image, img32::BGRA_8888);
-               g_image.loadFromFilename(&str[0], img32::BGRA_8888);
+
+               img32::ImageCodec codec(img32::Unchanged_ColorType);
+               codec.setErrorCallback([](const char* msg){puts(msg);});
+               codec.decode(&g_image, &str[0]);
+
+               printf("Palette size: %d\n", g_image.getPalette()->size());
+               uint32_t c = g_image.getPalette()->getColor(15);
+               printf("15: %d %d %d\n", img32::getR(c), img32::getG(c), img32::getB(c));
 
                InvalidateRect(hWnd, nullptr, TRUE);
             }

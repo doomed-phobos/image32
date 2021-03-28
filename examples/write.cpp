@@ -1,35 +1,15 @@
 #include "image32/image32.h"
-using namespace img32;
 
 #include <iostream>
 
-class ErrorDelegate : public IOErrorDelegate
-{
-public:
-   virtual void OnError(const_charp msg) override {puts(msg);}
-};
-
 int main()
 {
-   Image img(ImageInfo::Make(3, 1, RGBA_8888));
-   uint8_t pixels[] = {
-      255, 0, 0, 255,
-      0, 255, 0, 255,
-      0, 0, 255, 255
-   };
-   ErrorDelegate err;
+   img32::ImageCodec codec(img32::Unchanged_ColorType);
+   img32::ImageData data;
 
-   EncoderOptions eo;
-   eo.colortype = EncoderOptions::RGBA_ColorType;
-   eo.jpg_quality = 100;
-   eo.jpg_background = rgba(255, 0, 0);
-   eo.bmp_background = rgba(0, 255, 0);
+   codec.decode(&data, "C:\\Users\\Usuario\\Desktop\\Imagenes\\YlzsO.png");
 
-   ImageIO io("C:\\Users\\Usuario\\Desktop\\image.jpg");
-   io.setErrorDelegate(&err);
-   img.setPixels(pixels);
-   io.encode(img, eo);
-   //saveToFilename("C:\\Users\\Usuario\\Desktop\\image.bmp", eo);
+   uint32_t c = data.getPalette()->getColor(14);
 
    return 0;
 }
